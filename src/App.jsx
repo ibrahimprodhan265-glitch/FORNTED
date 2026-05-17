@@ -29,6 +29,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 const USER_TOKEN_KEY = "hyperRegedit.userToken";
 const ADMIN_TOKEN_KEY = "hyperRegedit.adminToken";
 const DEVICE_ID_KEY = "hyperRegedit.deviceId";
+const DAY_MS = 86400000;
 
 const initialSettings = {
   brandName: "Hyper Regedit Access",
@@ -36,6 +37,8 @@ const initialSettings = {
   loginBackgroundUrl: "/assets/hyper-logo.jpeg",
   dashboardLogoUrl: "/icon.png",
   liveBackgroundUrl: "/assets/hyper-logo.jpeg",
+  developerName: "ESE Developer",
+  developerBannerUrl: "",
   telegramUrl: "https://t.me/your_support",
   maintenanceEnabled: false,
   maintenanceMessage: "System maintenance is running. Please try again later.",
@@ -50,6 +53,33 @@ function deviceId() {
     `device_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
   localStorage.setItem(DEVICE_ID_KEY, next);
   return next;
+}
+
+function deviceName() {
+  const ua = navigator.userAgent || "";
+  const width = Math.min(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight);
+  const height = Math.max(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight);
+  const ratio = window.devicePixelRatio || 1;
+  if (/iPhone/i.test(ua)) {
+    const key = `${width}x${height}@${ratio}`;
+    const map = {
+      "430x932@3": "iPhone 15 Pro Max / 14 Pro Max",
+      "393x852@3": "iPhone 15 Pro / 14 Pro",
+      "428x926@3": "iPhone 13 Pro Max / 12 Pro Max",
+      "390x844@3": "iPhone 15 / 14 / 13",
+      "414x896@3": "iPhone 11 Pro Max / XS Max",
+      "414x896@2": "iPhone 11 / XR",
+      "375x812@3": "iPhone X / XS / 11 Pro",
+      "375x667@2": "iPhone 8 / SE",
+      "320x568@2": "iPhone SE"
+    };
+    return map[key] || "iPhone";
+  }
+  if (/iPad/i.test(ua)) return "iPad";
+  if (/Android/i.test(ua)) return "Android Device";
+  if (/Windows/i.test(ua)) return "Windows Device";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "Mac Device";
+  return "Unknown Device";
 }
 
 async function api(path, options = {}, token = "") {
@@ -99,7 +129,7 @@ function daysLeft(value) {
   if (!value) return "Infinite";
   const diff = new Date(value).getTime() - Date.now();
   if (diff < 0) return "Expired";
-  return `${Math.max(1, Math.ceil(diff / 86400000))} days`;
+  return `${Math.max(1, Math.ceil(diff / DAY_MS))} days`;
 }
 
 function asIsoFromInput(value) {
@@ -108,7 +138,13 @@ function asIsoFromInput(value) {
 
 function expiryFromMode(mode, customValue) {
   if (mode === "custom") return asIsoFromInput(customValue);
-  return new Date(Date.now() + Number(mode || 7) * 86400000).toISOString();
+  return new Date(Date.now() + Number(mode || 7) * DAY_MS).toISOString();
+}
+
+function shiftIsoDays(value, delta) {
+  const currentTime = value ? new Date(value).getTime() : Date.now();
+  const base = Number.isNaN(currentTime) || currentTime < Date.now() ? Date.now() : currentTime;
+  return new Date(base + Number(delta || 0) * DAY_MS).toISOString();
 }
 
 function fileToDataUrl(file) {
@@ -193,6 +229,7 @@ export default function App() {
   const [notice, setNotice] = useState("");
 
   const currentDeviceId = useMemo(deviceId, []);
+  const currentDeviceName = useMemo(deviceName, []);
 
   useEffect(() => {
     let alive = true;
@@ -263,6 +300,7 @@ export default function App() {
           userToken={userToken}
           setUserToken={setUserToken}
           currentDeviceId={currentDeviceId}
+          currentDeviceName={currentDeviceName}
           installedApp={installedApp}
           goAdmin={goAdmin}
         />
@@ -284,6 +322,7 @@ function UserApp({
   userToken,
   setUserToken,
   currentDeviceId,
+  currentDeviceName,
   installedApp,
   goAdmin
 }) {
@@ -295,6 +334,7 @@ function UserApp({
         settings={settings}
         notice={notice}
         currentDeviceId={currentDeviceId}
+        currentDeviceName={currentDeviceName}
         showAdminLink={!installedApp}
         onLogin={({ token, user: nextUser, options: nextOptions, settings: nextSettings }, remember) => {
           storeToken(USER_TOKEN_KEY, token, remember);
@@ -314,6 +354,7 @@ function UserApp({
       packages={packages}
       options={options}
       user={user}
+      currentDeviceName={currentDeviceName}
       token={userToken}
       setUser={setUser}
       onLogout={async () => {
@@ -348,7 +389,7 @@ function Splash({ settings }) {
   );
 }
 
-function LoginScreen({ settings, notice, currentDeviceId, showAdminLink, onLogin, goAdmin }) {
+function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, showAdminLink, onLogin, goAdmin }) {
   const [form, setForm] = useState({ username: "", password: "", remember: false });
   const [showPassword, setShowPassword] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
@@ -362,7 +403,7 @@ function LoginScreen({ settings, notice, currentDeviceId, showAdminLink, onLogin
     try {
       const data = await api("/api/auth/login", {
         method: "POST",
-        body: JSON.stringify({ ...form, deviceId: currentDeviceId })
+        body: JSON.stringify({ ...form, deviceId: currentDeviceId, deviceName: currentDeviceName })
       });
       setLoginSuccess(true);
       window.setTimeout(() => onLogin(data, form.remember), 420);
@@ -474,13 +515,21 @@ function LoginScreen({ settings, notice, currentDeviceId, showAdminLink, onLogin
   );
 }
 
-function Dashboard({ settings, packages, options, user, token, setUser, onLogout }) {
+function Dashboard({ settings, packages, options, user, currentDeviceName, token, setUser, onLogout }) {
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState("success");
   const [busyOption, setBusyOption] = useState("");
   const [gameMode, setGameMode] = useState("Free Fire");
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const activePackage = packages.find((item) => item.id === user.packageId);
+  const displayDeviceName = user.deviceName || currentDeviceName || "Unknown Device";
+
+  function selectGameMode(mode) {
+    setGameMode(mode);
+    setMessageKind("success");
+    setMessage(`${mode} Injected`);
+    window.setTimeout(() => setMessage(""), 1800);
+  }
 
   async function toggleOption(option, enabled) {
     setBusyOption(option.id);
@@ -515,6 +564,7 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
           <div>
             <p>Hello, {user.username}</p>
             <h1>{settings.brandName}</h1>
+            <span className="device-line">{user.packageName || activePackage?.name} / {displayDeviceName}</span>
           </div>
           <LiveLogo src={settings.dashboardLogoUrl} fallback={settings.appIconUrl} />
         </header>
@@ -574,7 +624,7 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
                 type="button"
                 className={gameMode === mode ? "active" : ""}
                 key={mode}
-                onClick={() => setGameMode(mode)}
+                onClick={() => selectGameMode(mode)}
               >
                 {mode}
               </button>
@@ -600,6 +650,10 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
               <strong>{formatDate(user.expiresAt)}</strong>
             </div>
             <div>
+              <span>Device Name</span>
+              <strong>{displayDeviceName}</strong>
+            </div>
+            <div>
               <span>Device</span>
               <strong>{user.activeDevices || 0}/{user.maxDevices || 1}</strong>
             </div>
@@ -616,6 +670,12 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
           <button className="logout-button" onClick={onLogout}>
             <LogOut size={18} /> Logout
           </button>
+        </div>
+
+        <div className="developer-card">
+          {settings.developerBannerUrl ? <img src={settings.developerBannerUrl} alt="" /> : null}
+          <span>Developed by</span>
+          <strong>{settings.developerName || "ESE Developer"}</strong>
         </div>
       </motion.div>
     </section>
@@ -910,6 +970,16 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
     expiresAt: ""
   });
   const [message, setMessage] = useState("");
+  const [bulkDays, setBulkDays] = useState(1);
+  const [editingId, setEditingId] = useState("");
+  const [editForm, setEditForm] = useState({
+    username: "",
+    password: "",
+    packageName: "",
+    status: "Active",
+    expiresAt: "",
+    maxDevices: 1
+  });
 
   useEffect(() => {
     if (form.packageName === "Custom Access" && packages[0]?.name) {
@@ -955,6 +1025,55 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
     reload();
   }
 
+  function startEditUser(user) {
+    setEditingId(user.id);
+    setEditForm({
+      username: user.username,
+      password: "",
+      packageName: user.packageName,
+      status: user.status,
+      expiresAt: toDateInput(user.expiresAt),
+      maxDevices: user.maxDevices || 1
+    });
+  }
+
+  async function saveEditUser(event) {
+    event.preventDefault();
+    const patch = {
+      username: editForm.username,
+      packageName: editForm.packageName,
+      status: editForm.status,
+      expiresAt: asIsoFromInput(editForm.expiresAt),
+      maxDevices: editForm.maxDevices
+    };
+    if (editForm.password) patch.password = editForm.password;
+    await updateUser(editingId, patch);
+    setEditingId("");
+    setEditForm({ username: "", password: "", packageName: "", status: "Active", expiresAt: "", maxDevices: 1 });
+    setMessage("User updated");
+  }
+
+  async function adjustUserDays(user, delta) {
+    await updateUser(user.id, { expiresAt: shiftIsoDays(user.expiresAt, delta) });
+    setMessage(delta > 0 ? `Added ${delta} day(s)` : `Removed ${Math.abs(delta)} day(s)`);
+  }
+
+  async function adjustAllDays(delta) {
+    const nextUsers = await Promise.all(
+      users.map(async (user) => {
+        const data = await api(
+          `/api/admin/users/${user.id}`,
+          { method: "PATCH", body: JSON.stringify({ expiresAt: shiftIsoDays(user.expiresAt, delta) }) },
+          token
+        );
+        return data.user;
+      })
+    );
+    setUsers(nextUsers);
+    setMessage(delta > 0 ? `Added ${delta} day(s) to all users` : `Removed ${Math.abs(delta)} day(s) from all users`);
+    reload();
+  }
+
   async function deleteUser(userId) {
     await api(`/api/admin/users/${userId}`, { method: "DELETE" }, token);
     setUsers(users.filter((user) => user.id !== userId));
@@ -969,7 +1088,12 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
           <input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} required />
         </Field>
         <Field label="Password">
-          <input value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
+          <input
+            type="password"
+            value={form.password}
+            onChange={(event) => setForm({ ...form, password: event.target.value })}
+            required
+          />
         </Field>
         <Field label="Package Name">
           <input
@@ -1025,6 +1149,17 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
 
       <div className="glass-card data-card">
         <h2>Users</h2>
+        <div className="bulk-tools">
+          <input
+            type="number"
+            min="1"
+            value={bulkDays}
+            onChange={(event) => setBulkDays(event.target.value)}
+            aria-label="Bulk days"
+          />
+          <button onClick={() => adjustAllDays(Number(bulkDays || 1))}>+ Days All</button>
+          <button onClick={() => adjustAllDays(-Number(bulkDays || 1))}>- Days All</button>
+        </div>
         <div className="table-scroll">
           <table>
             <thead>
@@ -1048,6 +1183,11 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
                   </td>
                   <td>{user.activeDevices || 0}/{user.maxDevices || 1}</td>
                   <td className="action-row">
+                    <button onClick={() => adjustUserDays(user, 1)}>+1</button>
+                    <button onClick={() => adjustUserDays(user, -1)}>-1</button>
+                    <button onClick={() => startEditUser(user)}>
+                      <Settings size={15} />
+                    </button>
                     <button onClick={() => updateUser(user.id, { status: user.status === "Active" ? "Suspended" : "Active" })}>
                       <CirclePower size={15} />
                     </button>
@@ -1063,6 +1203,42 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
             </tbody>
           </table>
         </div>
+        {editingId ? (
+          <form className="user-edit-panel" onSubmit={saveEditUser}>
+            <h3>Edit User</h3>
+            <Field label="Username">
+              <input value={editForm.username} onChange={(event) => setEditForm({ ...editForm, username: event.target.value })} />
+            </Field>
+            <Field label="New Password">
+              <input
+                type="password"
+                value={editForm.password}
+                onChange={(event) => setEditForm({ ...editForm, password: event.target.value })}
+                placeholder="Leave blank to keep old password"
+              />
+            </Field>
+            <Field label="Package Name">
+              <input value={editForm.packageName} onChange={(event) => setEditForm({ ...editForm, packageName: event.target.value })} />
+            </Field>
+            <Field label="Expire Date">
+              <input type="datetime-local" value={editForm.expiresAt} onChange={(event) => setEditForm({ ...editForm, expiresAt: event.target.value })} />
+            </Field>
+            <Field label="Device Limit">
+              <input type="number" min="1" value={editForm.maxDevices} onChange={(event) => setEditForm({ ...editForm, maxDevices: event.target.value })} />
+            </Field>
+            <Field label="Status">
+              <select value={editForm.status} onChange={(event) => setEditForm({ ...editForm, status: event.target.value })}>
+                <option>Active</option>
+                <option>Suspended</option>
+                <option>Expired</option>
+              </select>
+            </Field>
+            <div className="edit-actions">
+              <NeonButton><Save size={16} /> Save User</NeonButton>
+              <button type="button" onClick={() => setEditingId("")}>Cancel</button>
+            </div>
+          </form>
+        ) : null}
       </div>
     </div>
   );
@@ -1241,6 +1417,8 @@ function PackagesPanel({ token, packages, setPackages, reload }) {
 function SettingsPanel({ token, settings, setSettings, reload }) {
   const [form, setForm] = useState(settings);
   const [message, setMessage] = useState("");
+  const [adminPasswordForm, setAdminPasswordForm] = useState({ currentPassword: "", newPassword: "" });
+  const [adminPasswordMessage, setAdminPasswordMessage] = useState("");
 
   useEffect(() => setForm(settings), [settings]);
 
@@ -1250,6 +1428,17 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
     setSettings(data.settings);
     setMessage("Settings saved");
     reload();
+  }
+
+  async function changeAdminPassword() {
+    setAdminPasswordMessage("");
+    try {
+      await api("/api/admin/password", { method: "PATCH", body: JSON.stringify(adminPasswordForm) }, token);
+      setAdminPasswordForm({ currentPassword: "", newPassword: "" });
+      setAdminPasswordMessage("Admin password updated");
+    } catch (error) {
+      setAdminPasswordMessage(error.message);
+    }
   }
 
   return (
@@ -1315,6 +1504,30 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
           }}
         />
       </label>
+      <Field label="Developer Name">
+        <input
+          value={form.developerName || ""}
+          onChange={(event) => setForm({ ...form, developerName: event.target.value })}
+        />
+      </Field>
+      <Field label="Developer Banner URL or Data">
+        <input
+          value={form.developerBannerUrl || ""}
+          onChange={(event) => setForm({ ...form, developerBannerUrl: event.target.value })}
+        />
+      </Field>
+      <label className="upload-line">
+        <Upload size={16} />
+        Upload developer banner
+        <input
+          type="file"
+          accept="image/*"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (file) setForm({ ...form, developerBannerUrl: await fileToDataUrl(file) });
+          }}
+        />
+      </label>
       <Field label="User Dashboard Background URL or Data">
         <input
           value={form.liveBackgroundUrl || ""}
@@ -1353,6 +1566,28 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
           onChange={(event) => setForm({ ...form, maintenanceMessage: event.target.value })}
         />
       </Field>
+      <div className="admin-password-box">
+        <h3>Admin Password</h3>
+        <Field label="Current Admin Password">
+          <input
+            type="password"
+            value={adminPasswordForm.currentPassword}
+            onChange={(event) => setAdminPasswordForm({ ...adminPasswordForm, currentPassword: event.target.value })}
+          />
+        </Field>
+        <Field label="New Admin Password">
+          <input
+            type="password"
+            value={adminPasswordForm.newPassword}
+            onChange={(event) => setAdminPasswordForm({ ...adminPasswordForm, newPassword: event.target.value })}
+            minLength={6}
+          />
+        </Field>
+        <button type="button" className="ghost-button admin-password-button" onClick={changeAdminPassword}>
+          <LockKeyhole size={16} /> Update Admin Password
+        </button>
+        {adminPasswordMessage ? <p className="muted">{adminPasswordMessage}</p> : null}
+      </div>
       <NeonButton>
         <Save size={17} /> Save Settings
       </NeonButton>

@@ -884,6 +884,12 @@ button:disabled {
     object-fit: cover;
   }
 
+  .dash-header .live-logo {
+    width: 70px;
+    height: 70px;
+    border-radius: 20px;
+  }
+
   .app-icon-lg {
     width: 118px;
     height: 118px;
@@ -1152,6 +1158,15 @@ button:disabled {
     font-weight: 900;
   }
 
+  .device-line {
+    display: block;
+    max-width: 210px;
+    color: rgba(207, 187, 255, 0.72);
+    font-size: 11px;
+    font-weight: 800;
+    line-height: 1.35;
+  }
+
   .status-grid,
   .admin-grid {
     display: grid;
@@ -1371,6 +1386,38 @@ button:disabled {
   .logout-button {
     border: 0;
     background: linear-gradient(90deg, #5b19d6, #7c3cff);
+  }
+
+  .developer-card {
+    display: grid;
+    gap: 7px;
+    justify-items: center;
+    padding: 12px;
+    border: 1px solid rgba(180, 108, 255, 0.22);
+    border-radius: 14px;
+    background: linear-gradient(180deg, rgba(11, 7, 26, 0.78), rgba(5, 1, 15, 0.82));
+    text-align: center;
+  }
+
+  .developer-card img {
+    width: 100%;
+    max-height: 84px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 1px solid rgba(180, 108, 255, 0.22);
+  }
+
+  .developer-card span {
+    color: rgba(238, 230, 255, 0.62);
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .developer-card strong {
+    color: #fff;
+    font-size: 13px;
+    text-shadow: 0 0 18px rgba(180, 108, 255, 0.5);
   }
 
   .splash-shell {
@@ -1842,6 +1889,73 @@ button:disabled {
 
   .table-scroll {
     overflow: auto;
+    margin-top: 12px;
+  }
+
+  .bulk-tools {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .bulk-tools input {
+    width: 86px;
+    min-height: 38px;
+    border: 1px solid rgba(180, 108, 255, 0.3);
+    border-radius: 12px;
+    padding: 0 10px;
+    color: #fff;
+    background: rgba(8, 5, 20, 0.78);
+    outline: none;
+  }
+
+  .bulk-tools button,
+  .edit-actions > button[type="button"],
+  .admin-password-button {
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid rgba(180, 108, 255, 0.28);
+    border-radius: 12px;
+    padding: 0 12px;
+    color: #f4efff;
+    background: rgba(124, 60, 255, 0.12);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .action-row button {
+    width: auto;
+    min-width: 34px;
+    padding: 0 8px;
+  }
+
+  .user-edit-panel,
+  .admin-password-box {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid rgba(180, 108, 255, 0.22);
+    border-radius: 14px;
+    background: rgba(11, 7, 26, 0.76);
+  }
+
+  .user-edit-panel h3,
+  .admin-password-box h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .edit-actions {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
     margin-top: 12px;
   }
 
