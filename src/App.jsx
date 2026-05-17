@@ -478,6 +478,8 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState("success");
   const [busyOption, setBusyOption] = useState("");
+  const [gameMode, setGameMode] = useState("Free Fire");
+  const [showAccountInfo, setShowAccountInfo] = useState(false);
   const activePackage = packages.find((item) => item.id === user.packageId);
 
   async function toggleOption(option, enabled) {
@@ -561,32 +563,56 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
           })}
         </div>
 
-        {message ? <p className={messageKind === "success" ? "success-text" : "error-text"}>{message}</p> : null}
-
-        <div className="glass-card account-card">
-          <h2>Account Info</h2>
+        <div className="game-mode-card">
           <div>
-            <span>Username</span>
-            <strong>{user.username}</strong>
+            <span>Game Mode</span>
+            <strong>{gameMode}</strong>
           </div>
-          <div>
-            <span>Package</span>
-            <strong>{user.packageName}</strong>
-          </div>
-          <div>
-            <span>Expire Date</span>
-            <strong>{formatDate(user.expiresAt)}</strong>
-          </div>
-          <div>
-            <span>Device</span>
-            <strong>{user.activeDevices || 0}/{user.maxDevices || 1}</strong>
+          <div className="game-mode-selector" role="group" aria-label="Game mode selector">
+            {["Free Fire", "Free Fire Max"].map((mode) => (
+              <button
+                type="button"
+                className={gameMode === mode ? "active" : ""}
+                key={mode}
+                onClick={() => setGameMode(mode)}
+              >
+                {mode}
+              </button>
+            ))}
           </div>
         </div>
+
+        {message ? <p className={messageKind === "success" ? "success-text" : "error-text"}>{message}</p> : null}
+
+        {showAccountInfo ? (
+          <motion.div className="glass-card account-card" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <h2>Account Info</h2>
+            <div>
+              <span>Username</span>
+              <strong>{user.username}</strong>
+            </div>
+            <div>
+              <span>Package</span>
+              <strong>{user.packageName}</strong>
+            </div>
+            <div>
+              <span>Expire Date</span>
+              <strong>{formatDate(user.expiresAt)}</strong>
+            </div>
+            <div>
+              <span>Device</span>
+              <strong>{user.activeDevices || 0}/{user.maxDevices || 1}</strong>
+            </div>
+          </motion.div>
+        ) : null}
 
         <div className="dash-actions">
           <a className="support-button" href={settings.telegramUrl} target="_blank" rel="noreferrer">
             <MessageCircle size={18} /> Support
           </a>
+          <button className="account-info-button" type="button" onClick={() => setShowAccountInfo(!showAccountInfo)}>
+            <User size={16} /> Info
+          </button>
           <button className="logout-button" onClick={onLogout}>
             <LogOut size={18} /> Logout
           </button>
@@ -1289,7 +1315,7 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
           }}
         />
       </label>
-      <Field label="Dashboard Live Background URL or Data">
+      <Field label="User Dashboard Background URL or Data">
         <input
           value={form.liveBackgroundUrl || ""}
           onChange={(event) => setForm({ ...form, liveBackgroundUrl: event.target.value })}
@@ -1297,7 +1323,7 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
       </Field>
       <label className="upload-line">
         <Upload size={16} />
-        Upload dashboard background
+        Upload user dashboard background
         <input
           type="file"
           accept="image/*"

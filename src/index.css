@@ -1274,6 +1274,55 @@ button:disabled {
     background: #31f59c;
   }
 
+  .game-mode-card {
+    display: grid;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid rgba(180, 108, 255, 0.24);
+    border-radius: 14px;
+    background: rgba(11, 7, 26, 0.76);
+  }
+
+  .game-mode-card > div:first-child {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .game-mode-card span {
+    color: rgba(238, 230, 255, 0.64);
+    font-size: 12px;
+  }
+
+  .game-mode-card strong {
+    color: #fff;
+    font-size: 13px;
+  }
+
+  .game-mode-selector {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .game-mode-selector button {
+    min-height: 38px;
+    border: 1px solid rgba(180, 108, 255, 0.28);
+    border-radius: 12px;
+    color: rgba(247, 244, 255, 0.72);
+    background: rgba(124, 60, 255, 0.1);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .game-mode-selector button.active {
+    color: #fff;
+    border-color: rgba(49, 245, 156, 0.5);
+    background: linear-gradient(90deg, rgba(49, 245, 156, 0.2), rgba(124, 60, 255, 0.3));
+    box-shadow: 0 0 22px rgba(49, 245, 156, 0.14);
+  }
+
   .account-card {
     padding: 14px;
     display: grid;
@@ -1291,7 +1340,8 @@ button:disabled {
 
   .support-button,
   .logout-button,
-  .ghost-button {
+  .ghost-button,
+  .account-info-button {
     min-height: 42px;
     flex: 1;
     display: inline-flex;
@@ -1307,6 +1357,15 @@ button:disabled {
   .ghost-button {
     border: 1px solid rgba(24, 242, 255, 0.28);
     background: rgba(24, 242, 255, 0.1);
+  }
+
+  .account-info-button {
+    flex: 0 0 auto;
+    min-width: 82px;
+    border: 1px solid rgba(180, 108, 255, 0.3);
+    background: rgba(124, 60, 255, 0.14);
+    font-size: 12px;
+    font-weight: 900;
   }
 
   .logout-button {
