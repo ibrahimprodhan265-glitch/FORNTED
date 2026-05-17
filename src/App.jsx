@@ -42,7 +42,7 @@ const initialSettings = {
   telegramUrl: "https://t.me/your_support",
   maintenanceEnabled: false,
   maintenanceMessage: "System maintenance is running. Please try again later.",
-  webClipUrl: "https://yourdomain.com/app"
+  webClipUrl: "https://fornted.onrender.com/app"
 };
 
 function deviceId() {
@@ -145,6 +145,15 @@ function shiftIsoDays(value, delta) {
   const currentTime = value ? new Date(value).getTime() : Date.now();
   const base = Number.isNaN(currentTime) || currentTime < Date.now() ? Date.now() : currentTime;
   return new Date(base + Number(delta || 0) * DAY_MS).toISOString();
+}
+
+function logDeviceLabel(userAgent = "") {
+  if (/iPad/i.test(userAgent)) return "iPad";
+  if (/iPhone/i.test(userAgent)) return "iPhone";
+  if (/Android/i.test(userAgent)) return "Android";
+  if (/Windows/i.test(userAgent)) return "Windows";
+  if (/Macintosh|Mac OS X/i.test(userAgent)) return "Mac";
+  return "Unknown";
 }
 
 function fileToDataUrl(file) {
@@ -808,7 +817,7 @@ function AdminApp({ settings, setSettings, packages, setPackages, options, setOp
             reload={loadAdminData}
           />
         ) : null}
-        {tab === "logs" ? <LogsPanel logs={logs} /> : null}
+        {tab === "logs" ? <LogsPanel token={adminToken} logs={logs} setLogs={setLogs} reload={loadAdminData} /> : null}
       </div>
     </section>
   );
@@ -1596,21 +1605,79 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
   );
 }
 
-function LogsPanel({ logs }) {
+function LogsPanel({ token, logs, setLogs, reload }) {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [message, setMessage] = useState("");
+  const allSelected = logs.length > 0 && selectedIds.length === logs.length;
+
+  function toggleLog(logId) {
+    setSelectedIds((current) =>
+      current.includes(logId) ? current.filter((item) => item !== logId) : [...current, logId]
+    );
+  }
+
+  async function deleteSelected() {
+    if (!selectedIds.length) {
+      setMessage("Select logs first");
+      return;
+    }
+    try {
+      const data = await api("/api/admin/logs", { method: "DELETE", body: JSON.stringify({ ids: selectedIds }) }, token);
+      setLogs(data.logs || []);
+      setSelectedIds([]);
+      setMessage("Selected logs deleted");
+      reload();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
+  async function deleteAll() {
+    try {
+      const data = await api("/api/admin/logs", { method: "DELETE", body: JSON.stringify({ all: true }) }, token);
+      setLogs(data.logs || []);
+      setSelectedIds([]);
+      setMessage("All logs deleted");
+      reload();
+    } catch (error) {
+      setMessage(error.message);
+    }
+  }
+
   return (
     <div className="glass-card data-card">
-      <h2>Access Logs</h2>
-      <LogTable logs={logs} />
+      <div className="log-panel-head">
+        <div>
+          <h2>Access Logs</h2>
+          <p className="muted">{logs.length} recent records</p>
+        </div>
+        <div className="log-toolbar">
+          <button type="button" onClick={() => setSelectedIds(allSelected ? [] : logs.map((log) => log.id))}>
+            {allSelected ? "Unselect" : "Select All"}
+          </button>
+          <button type="button" onClick={deleteSelected} disabled={!selectedIds.length}>
+            <Trash2 size={15} /> Selected Delete
+          </button>
+          <button type="button" className="danger-action" onClick={deleteAll} disabled={!logs.length}>
+            <Trash2 size={15} /> All Delete
+          </button>
+        </div>
+      </div>
+      {message ? <p className="muted">{message}</p> : null}
+      <LogTable logs={logs} selectedIds={selectedIds} onSelect={toggleLog} />
     </div>
   );
 }
 
-function LogTable({ logs }) {
+function LogTable({ logs, selectedIds = [], onSelect }) {
+  const selectable = Boolean(onSelect);
   return (
     <div className="table-scroll">
       <table>
         <thead>
           <tr>
+            {selectable ? <th>Select</th> : null}
+            <th>Device</th>
             <th>Username</th>
             <th>Action</th>
             <th>IP Address</th>
@@ -1620,6 +1687,18 @@ function LogTable({ logs }) {
         <tbody>
           {logs.map((log) => (
             <tr key={log.id}>
+              {selectable ? (
+                <td>
+                  <input
+                    className="log-checkbox"
+                    type="checkbox"
+                    checked={selectedIds.includes(log.id)}
+                    onChange={() => onSelect(log.id)}
+                    aria-label={`Select ${log.username || "log"}`}
+                  />
+                </td>
+              ) : null}
+              <td>{logDeviceLabel(log.userAgent)}</td>
               <td>{log.username || "-"}</td>
               <td>{log.action}</td>
               <td>{log.ipAddress || "-"}</td>

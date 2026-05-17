@@ -1900,6 +1900,25 @@ button:disabled {
     margin-top: 12px;
   }
 
+  .log-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .log-panel-head h2,
+  .log-panel-head p {
+    margin: 0;
+  }
+
+  .log-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
   .bulk-tools input {
     width: 86px;
     min-height: 38px;
@@ -1912,6 +1931,7 @@ button:disabled {
   }
 
   .bulk-tools button,
+  .log-toolbar button,
   .edit-actions > button[type="button"],
   .admin-password-button {
     min-height: 38px;
@@ -1926,6 +1946,18 @@ button:disabled {
     background: rgba(124, 60, 255, 0.12);
     font-size: 12px;
     font-weight: 900;
+  }
+
+  .log-toolbar .danger-action {
+    border-color: rgba(255, 85, 119, 0.38);
+    color: #ffe6ec;
+    background: rgba(255, 85, 119, 0.13);
+  }
+
+  .log-checkbox {
+    width: 18px;
+    height: 18px;
+    accent-color: #7c3cff;
   }
 
   .action-row button {

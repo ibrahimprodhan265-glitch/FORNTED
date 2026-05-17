@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+  <key>ConsentText</key>
+  <dict>
+    <key>default</key>
+    <string>OWNER : @hyperregedit
+TELEGRAM
+HYPER REGEDIT OFFICIAL
+https://t.me/hyperregedit</string>
+  </dict>
   <key>PayloadContent</key>
   <array>
     <dict>
@@ -19,10 +27,12 @@
       <string>Hyper Access Web Clip</string>
       <key>PayloadIdentifier</key>
       <string>com.hyperregedit.access.webclip</string>
+      <key>PayloadOrganization</key>
+      <string>HYPER TEAM</string>
       <key>PayloadType</key>
       <string>com.apple.webClip.managed</string>
       <key>PayloadUUID</key>
-      <string>0E244862-7C94-4E2E-9141-6F3B437A5E10</string>
+      <string>BC3D70FD-24C8-4B04-A482-DFFBC622D0EB</string>
       <key>PayloadVersion</key>
       <integer>1</integer>
       <key>Precomposed</key>
@@ -32,19 +42,19 @@
     </dict>
   </array>
   <key>PayloadDescription</key>
-  <string>Installs the Hyper Regedit Access Web Clip.</string>
+  <string>Message from Hyper Team. Installs the Hyper Regedit Access Web Clip.</string>
   <key>PayloadDisplayName</key>
-  <string>Hyper Regedit Access</string>
+  <string>Hyper Regedit Official</string>
   <key>PayloadIdentifier</key>
   <string>com.hyperregedit.access.profile</string>
   <key>PayloadOrganization</key>
-  <string>Hyper Regedit</string>
+  <string>HYPER TEAM</string>
   <key>PayloadRemovalDisallowed</key>
   <false/>
   <key>PayloadType</key>
   <string>Configuration</string>
   <key>PayloadUUID</key>
-  <string>2F48E39C-BB16-4D2B-9513-86201ED56612</string>
+  <string>99EBEB13-13A8-4C16-BB09-37E7F38647D0</string>
   <key>PayloadVersion</key>
   <integer>1</integer>
 </dict>
