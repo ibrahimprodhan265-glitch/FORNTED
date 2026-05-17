@@ -28,7 +28,7 @@ https://t.me/hyperregedit</string>
       <key>PayloadIdentifier</key>
       <string>com.hyperregedit.access.webclip</string>
       <key>PayloadOrganization</key>
-      <string>HYPER TEAM</string>
+      <string>Hyperteam</string>
       <key>PayloadType</key>
       <string>com.apple.webClip.managed</string>
       <key>PayloadUUID</key>
@@ -42,13 +42,13 @@ https://t.me/hyperregedit</string>
     </dict>
   </array>
   <key>PayloadDescription</key>
-  <string>Message from Hyper Team. Installs the Hyper Regedit Access Web Clip.</string>
+  <string>Message from Hyperteam install the Hyper regedit access</string>
   <key>PayloadDisplayName</key>
   <string>Hyper Regedit Official</string>
   <key>PayloadIdentifier</key>
   <string>com.hyperregedit.access.profile</string>
   <key>PayloadOrganization</key>
-  <string>HYPER TEAM</string>
+  <string>Hyperteam</string>
   <key>PayloadRemovalDisallowed</key>
   <false/>
   <key>PayloadType</key>

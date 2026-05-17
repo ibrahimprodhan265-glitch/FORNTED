@@ -7,7 +7,7 @@ param(
   [string]$Owner = "@hyperregedit",
   [string]$TelegramName = "HYPER REGEDIT OFFICIAL",
   [string]$TelegramUrl = "https://t.me/hyperregedit",
-  [string]$Organization = "HYPER TEAM"
+  [string]$Organization = "Hyperteam"
 )
 
 $resolvedIcon = Resolve-Path -LiteralPath $IconPath
@@ -69,7 +69,7 @@ $profile = @"
     </dict>
   </array>
   <key>PayloadDescription</key>
-  <string>Message from Hyper Team. Installs the Hyper Regedit Access Web Clip.</string>
+  <string>Message from Hyperteam install the Hyper regedit access</string>
   <key>PayloadDisplayName</key>
   <string>Hyper Regedit Official</string>
   <key>PayloadIdentifier</key>

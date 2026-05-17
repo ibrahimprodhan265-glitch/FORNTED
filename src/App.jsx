@@ -30,6 +30,7 @@ const USER_TOKEN_KEY = "hyperRegedit.userToken";
 const ADMIN_TOKEN_KEY = "hyperRegedit.adminToken";
 const DEVICE_ID_KEY = "hyperRegedit.deviceId";
 const DEVICE_NAME_KEY = "hyperRegedit.deviceName";
+const SETTINGS_CACHE_KEY = "hyperRegedit.settings";
 const DAY_MS = 86400000;
 
 const initialSettings = {
@@ -47,6 +48,26 @@ const initialSettings = {
   maintenanceMessage: "System maintenance is running. Please try again later.",
   webClipUrl: "https://fornted.onrender.com/app"
 };
+
+function settingsWithDefaults(value = {}) {
+  return { ...initialSettings, ...(value || {}) };
+}
+
+function loadCachedSettings() {
+  try {
+    return settingsWithDefaults(JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || "{}"));
+  } catch {
+    return initialSettings;
+  }
+}
+
+function cacheSettings(value) {
+  try {
+    localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settingsWithDefaults(value)));
+  } catch {
+    // Large uploaded data URLs can exceed browser storage; the server value still applies after bootstrap.
+  }
+}
 
 function deviceId() {
   const existing = localStorage.getItem(DEVICE_ID_KEY);
@@ -236,7 +257,7 @@ function isStandaloneApp() {
 export default function App() {
   const installedApp = isStandaloneApp();
   const [mode, setMode] = useState(window.location.pathname.includes("admin") && !installedApp ? "admin" : "user");
-  const [settings, setSettings] = useState(initialSettings);
+  const [settings, setSettings] = useState(loadCachedSettings);
   const [packages, setPackages] = useState([]);
   const [options, setOptions] = useState([]);
   const [userToken, setUserToken] = useState(readToken(USER_TOKEN_KEY));
@@ -251,10 +272,13 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     async function boot() {
+      const startedAt = Date.now();
       try {
         const bootData = await api("/api/bootstrap");
         if (!alive) return;
-        setSettings(bootData.settings || initialSettings);
+        const bootSettings = settingsWithDefaults(bootData.settings);
+        setSettings(bootSettings);
+        cacheSettings(bootSettings);
         setPackages(bootData.packages || []);
         setOptions(bootData.options || []);
 
@@ -262,14 +286,19 @@ export default function App() {
           const data = await api("/api/me", {}, userToken);
           setUser(data.user);
           setOptions(data.options || []);
-          setSettings(data.settings || initialSettings);
+          const nextSettings = settingsWithDefaults(data.settings);
+          setSettings(nextSettings);
+          cacheSettings(nextSettings);
         }
       } catch (error) {
         setNotice(error.message);
         clearToken(USER_TOKEN_KEY);
         setUserToken("");
       } finally {
-        if (alive) setBooting(false);
+        const delay = Math.max(0, 1300 - (Date.now() - startedAt));
+        window.setTimeout(() => {
+          if (alive) setBooting(false);
+        }, delay);
       }
     }
     boot();
@@ -358,7 +387,11 @@ function UserApp({
           setUserToken(token);
           setUser(nextUser);
           setOptions(nextOptions || options);
-          if (nextSettings) setSettings(nextSettings);
+          if (nextSettings) {
+            const mergedSettings = settingsWithDefaults(nextSettings);
+            setSettings(mergedSettings);
+            cacheSettings(mergedSettings);
+          }
         }}
         goAdmin={goAdmin}
       />
@@ -792,7 +825,9 @@ function AdminApp({ settings, setSettings, packages, setPackages, options, setOp
     setUsers(userData.users || []);
     setOptions(optionData.options || []);
     setPackages(packageData.packages || []);
-    setSettings(settingsData.settings || settings);
+    const adminSettings = settingsWithDefaults(settingsData.settings || settings);
+    setSettings(adminSettings);
+    cacheSettings(adminSettings);
     setLogs(logData.logs || []);
     setAdminReady(true);
   }
@@ -1524,7 +1559,9 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
   async function saveSettings(event) {
     event.preventDefault();
     const data = await api("/api/admin/settings", { method: "PATCH", body: JSON.stringify(form) }, token);
-    setSettings(data.settings);
+    const nextSettings = settingsWithDefaults(data.settings);
+    setSettings(nextSettings);
+    cacheSettings(nextSettings);
     setMessage("Settings saved");
     reload();
   }
