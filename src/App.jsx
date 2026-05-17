@@ -696,6 +696,7 @@ function AdminApp({ settings, setSettings, packages, setPackages, options, setOp
 
 function AdminLogin({ settings, message, onLogin, goApp }) {
   const [form, setForm] = useState({ username: "admin", password: "", remember: true });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(message);
   const [loading, setLoading] = useState(false);
 
@@ -717,40 +718,81 @@ function AdminLogin({ settings, message, onLogin, goApp }) {
   }
 
   return (
-    <section className="phone-wrap">
-      <motion.form className="phone-shell admin-login glass-card" onSubmit={submit} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <AppIcon src={settings.appIconUrl} />
-        <h1>ADMIN PANEL</h1>
-        <Field label="Admin Username">
-          <div className="input-shell">
-            <User size={18} />
-            <input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} />
+    <section className="admin-login-wrap">
+      <motion.form
+        className="admin-login-card"
+        onSubmit={submit}
+        initial={{ opacity: 0, y: 16, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+      >
+        <div className="admin-login-brand">
+          <AppIcon src={settings.appIconUrl} size="sm" />
+          <div>
+            <span>Hyper Regedit</span>
+            <strong>Secure Control</strong>
           </div>
-        </Field>
-        <Field label="Admin Password">
-          <div className="input-shell">
-            <LockKeyhole size={18} />
+        </div>
+
+        <div className="admin-login-title">
+          <div className="admin-login-shield">
+            <ShieldCheck size={28} />
+          </div>
+          <h1>ADMIN PANEL</h1>
+          <p>Login with your administrator password</p>
+        </div>
+
+        <label className="admin-login-field">
+          <span>ADMIN USERNAME</span>
+          <div className="admin-login-input">
+            <User size={20} />
             <input
-              type="password"
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              placeholder="ADMIN-2026"
+              value={form.username}
+              onChange={(event) => setForm({ ...form, username: event.target.value })}
+              placeholder="Enter admin username"
+              autoComplete="username"
             />
           </div>
-        </Field>
-        <label className="remember">
+        </label>
+
+        <label className="admin-login-field">
+          <span>ADMIN PASSWORD</span>
+          <div className="admin-login-input">
+            <LockKeyhole size={20} />
+            <input
+              type={showPassword ? "text" : "password"}
+              value={form.password}
+              onChange={(event) => setForm({ ...form, password: event.target.value })}
+              placeholder="Enter admin password"
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              className={`admin-login-eye ${showPassword ? "admin-login-eye-on" : ""}`}
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
+        </label>
+
+        <label className="admin-login-remember">
           <input
             type="checkbox"
             checked={form.remember}
             onChange={(event) => setForm({ ...form, remember: event.target.checked })}
           />
+          <span />
           Remember admin
         </label>
-        <NeonButton disabled={loading}>
+
+        <button className={`admin-login-button ${loading ? "admin-login-button-loading" : ""}`} disabled={loading}>
           <ShieldCheck size={18} /> {loading ? "OPENING" : "LOGIN"}
-        </NeonButton>
+        </button>
+
         {error ? <p className="error-text">{error}</p> : null}
-        <button type="button" className="admin-link" onClick={goApp}>
+
+        <button type="button" className="admin-login-user-link" onClick={goApp}>
           User App <ChevronRight size={16} />
         </button>
       </motion.form>
