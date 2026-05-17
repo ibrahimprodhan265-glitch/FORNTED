@@ -36,6 +36,7 @@ const DAY_MS = 86400000;
 const initialSettings = {
   brandName: "Hyper Regedit Access",
   appIconUrl: "/icon.png",
+  webClipLabel: "Hyper Access",
   splashImageUrl: "/icon.png",
   splashText: "Loading Hyper Regedit Access",
   loginBackgroundUrl: "/assets/hyper-logo.jpeg",
@@ -66,6 +67,15 @@ function cacheSettings(value) {
     localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify(settingsWithDefaults(value)));
   } catch {
     // Large uploaded data URLs can exceed browser storage; the server value still applies after bootstrap.
+  }
+}
+
+function mobileConfigUrl() {
+  const base = API_BASE || window.location.origin;
+  try {
+    return new URL("/hyper-regedit-access.mobileconfig", base).toString();
+  } catch {
+    return new URL("/hyper-regedit-access.mobileconfig", window.location.origin).toString();
   }
 }
 
@@ -1553,6 +1563,7 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
   const [message, setMessage] = useState("");
   const [adminPasswordForm, setAdminPasswordForm] = useState({ currentPassword: "", newPassword: "" });
   const [adminPasswordMessage, setAdminPasswordMessage] = useState("");
+  const profileUrl = mobileConfigUrl();
 
   useEffect(() => setForm(settings), [settings]);
 
@@ -1588,6 +1599,13 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
       </div>
       <Field label="Brand Name">
         <input value={form.brandName} onChange={(event) => setForm({ ...form, brandName: event.target.value })} />
+      </Field>
+      <Field label="iPhone Home Screen Icon Name">
+        <input
+          value={form.webClipLabel || ""}
+          onChange={(event) => setForm({ ...form, webClipLabel: event.target.value })}
+          placeholder="Hyper Access"
+        />
       </Field>
       <Field label="App Icon URL or Data">
         <input value={form.appIconUrl} onChange={(event) => setForm({ ...form, appIconUrl: event.target.value })} />
@@ -1712,6 +1730,13 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
       <Field label="Web Clip URL">
         <input value={form.webClipUrl} onChange={(event) => setForm({ ...form, webClipUrl: event.target.value })} />
       </Field>
+      <div className="profile-download-box">
+        <span>Dynamic iPhone Profile</span>
+        <a href={profileUrl} target="_blank" rel="noreferrer">
+          Download Mobile Config
+        </a>
+        <small>After changing icon/name, install this profile again on iPhone.</small>
+      </div>
       <label className="remember">
         <input
           type="checkbox"

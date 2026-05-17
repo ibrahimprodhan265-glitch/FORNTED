@@ -7,6 +7,7 @@ param(
   [string]$Owner = "@hyperregedit",
   [string]$TelegramName = "HYPER REGEDIT OFFICIAL",
   [string]$TelegramUrl = "https://t.me/hyperregedit",
+  [string]$Label = "Hyper Access",
   [string]$Organization = "Hyperteam"
 )
 
@@ -24,6 +25,7 @@ $escapedAppUrl = Escape-Xml $AppUrl
 $escapedOwner = Escape-Xml $Owner
 $escapedTelegramName = Escape-Xml $TelegramName
 $escapedTelegramUrl = Escape-Xml $TelegramUrl
+$escapedLabel = Escape-Xml $Label
 $escapedOrganization = Escape-Xml $Organization
 $consentText = "OWNER : $escapedOwner`nTELEGRAM`n$escapedTelegramName`n$escapedTelegramUrl"
 
@@ -47,11 +49,11 @@ $profile = @"
       <key>IsRemovable</key>
       <true/>
       <key>Label</key>
-      <string>Hyper Access</string>
+      <string>$escapedLabel</string>
       <key>PayloadDescription</key>
-      <string>Add Hyper Regedit Access to the iPhone Home Screen.</string>
+      <string>Add $escapedLabel to the iPhone Home Screen.</string>
       <key>PayloadDisplayName</key>
-      <string>Hyper Access Web Clip</string>
+      <string>$escapedLabel Web Clip</string>
       <key>PayloadIdentifier</key>
       <string>com.hyperregedit.access.webclip</string>
       <key>PayloadOrganization</key>

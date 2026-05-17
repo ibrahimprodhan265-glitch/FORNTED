@@ -2171,6 +2171,42 @@ button:disabled {
     margin: 0;
   }
 
+  .profile-download-box {
+    display: grid;
+    gap: 8px;
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid rgba(24, 242, 255, 0.22);
+    border-radius: 14px;
+    background: rgba(24, 242, 255, 0.08);
+  }
+
+  .profile-download-box span {
+    color: rgba(238, 230, 255, 0.7);
+    font-size: 12px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .profile-download-box a {
+    width: fit-content;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    border-radius: 12px;
+    padding: 0 13px;
+    color: #fff;
+    text-decoration: none;
+    background: linear-gradient(90deg, #5b19d6, #18a8ff);
+    font-size: 12px;
+    font-weight: 900;
+  }
+
+  .profile-download-box small {
+    color: rgba(238, 230, 255, 0.62);
+    font-size: 11px;
+  }
+
   @keyframes shine {
     0% {
       transform: translateX(-110%);
