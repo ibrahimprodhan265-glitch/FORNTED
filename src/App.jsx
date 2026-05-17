@@ -29,11 +29,14 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 const USER_TOKEN_KEY = "hyperRegedit.userToken";
 const ADMIN_TOKEN_KEY = "hyperRegedit.adminToken";
 const DEVICE_ID_KEY = "hyperRegedit.deviceId";
+const DEVICE_NAME_KEY = "hyperRegedit.deviceName";
 const DAY_MS = 86400000;
 
 const initialSettings = {
   brandName: "Hyper Regedit Access",
   appIconUrl: "/icon.png",
+  splashImageUrl: "/icon.png",
+  splashText: "Loading Hyper Regedit Access",
   loginBackgroundUrl: "/assets/hyper-logo.jpeg",
   dashboardLogoUrl: "/icon.png",
   liveBackgroundUrl: "/assets/hyper-logo.jpeg",
@@ -56,30 +59,19 @@ function deviceId() {
 }
 
 function deviceName() {
+  const savedName = localStorage.getItem(DEVICE_NAME_KEY);
+  if (savedName) return savedName;
   const ua = navigator.userAgent || "";
-  const width = Math.min(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight);
-  const height = Math.max(window.screen?.width || window.innerWidth, window.screen?.height || window.innerHeight);
-  const ratio = window.devicePixelRatio || 1;
-  if (/iPhone/i.test(ua)) {
-    const key = `${width}x${height}@${ratio}`;
-    const map = {
-      "430x932@3": "iPhone 15 Pro Max / 14 Pro Max",
-      "393x852@3": "iPhone 15 Pro / 14 Pro",
-      "428x926@3": "iPhone 13 Pro Max / 12 Pro Max",
-      "390x844@3": "iPhone 15 / 14 / 13",
-      "414x896@3": "iPhone 11 Pro Max / XS Max",
-      "414x896@2": "iPhone 11 / XR",
-      "375x812@3": "iPhone X / XS / 11 Pro",
-      "375x667@2": "iPhone 8 / SE",
-      "320x568@2": "iPhone SE"
-    };
-    return map[key] || "iPhone";
+  const platform = navigator.userAgentData?.platform || navigator.platform || "";
+  if (/iPad/i.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1)) return "iPad";
+  if (/iPhone/i.test(ua)) return "iPhone";
+  if (/Android/i.test(ua)) {
+    const model = ua.match(/Android[^;]*;\s*([^;)]+)\)/i)?.[1]?.replace(/\s*Build\/.*$/i, "").trim();
+    return model || "Android Device";
   }
-  if (/iPad/i.test(ua)) return "iPad";
-  if (/Android/i.test(ua)) return "Android Device";
   if (/Windows/i.test(ua)) return "Windows Device";
   if (/Macintosh|Mac OS X/i.test(ua)) return "Mac Device";
-  return "Unknown Device";
+  return platform || "Unknown Device";
 }
 
 async function api(path, options = {}, token = "") {
@@ -130,6 +122,22 @@ function daysLeft(value) {
   const diff = new Date(value).getTime() - Date.now();
   if (diff < 0) return "Expired";
   return `${Math.max(1, Math.ceil(diff / DAY_MS))} days`;
+}
+
+function liveSubscription(value, now = Date.now()) {
+  if (!value) return "Life Subscription";
+  const diff = new Date(value).getTime() - now;
+  if (Number.isNaN(diff)) return "Not set";
+  if (diff <= 0) return "Expired";
+  const days = Math.floor(diff / DAY_MS);
+  const hours = Math.floor((diff % DAY_MS) / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  const seconds = Math.floor((diff % 60000) / 1000);
+  return `${days}d ${hours}h ${minutes}m ${seconds}s`;
+}
+
+function needsExactDeviceName(value = "") {
+  return ["iPhone", "iPad", "Android Device", "Unknown Device"].includes(value);
 }
 
 function asIsoFromInput(value) {
@@ -388,8 +396,16 @@ function Splash({ settings }) {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
       >
-        <AppIcon src={settings.appIconUrl} />
+        <motion.div
+          className="splash-visual"
+          initial={{ opacity: 0, y: 16, scale: 0.9 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring", stiffness: 150, damping: 16 }}
+        >
+          <LiveLogo src={settings.splashImageUrl || settings.appIconUrl} fallback={settings.appIconUrl} />
+        </motion.div>
         <h1>{settings.brandName}</h1>
+        <p>{settings.splashText || "Loading Hyper Regedit Access"}</p>
         <div className="loading-track">
           <motion.span initial={{ width: "12%" }} animate={{ width: "86%" }} transition={{ duration: 1.4 }} />
         </div>
@@ -530,8 +546,42 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
   const [busyOption, setBusyOption] = useState("");
   const [gameMode, setGameMode] = useState("Free Fire");
   const [showAccountInfo, setShowAccountInfo] = useState(false);
+  const [now, setNow] = useState(Date.now());
   const activePackage = packages.find((item) => item.id === user.packageId);
   const displayDeviceName = user.deviceName || currentDeviceName || "Unknown Device";
+  const subscriptionTime = liveSubscription(user.expiresAt, now);
+  const [exactDeviceName, setExactDeviceName] = useState(displayDeviceName);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    setExactDeviceName(displayDeviceName);
+  }, [displayDeviceName]);
+
+  async function saveDeviceName(event) {
+    event.preventDefault();
+    const nextName = exactDeviceName.trim();
+    if (!nextName) return;
+    localStorage.setItem(DEVICE_NAME_KEY, nextName);
+    try {
+      const data = await api(
+        "/api/me/device-name",
+        { method: "PATCH", body: JSON.stringify({ deviceName: nextName }) },
+        token
+      );
+      setUser({ ...user, deviceName: data.user?.deviceName || nextName });
+      setMessageKind("success");
+      setMessage("Device name saved");
+    } catch (error) {
+      setUser({ ...user, deviceName: nextName });
+      setMessageKind("error");
+      setMessage(error.message);
+    }
+    window.setTimeout(() => setMessage(""), 1800);
+  }
 
   function selectGameMode(mode) {
     setGameMode(mode);
@@ -573,7 +623,10 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
           <div>
             <p>Hello, {user.username}</p>
             <h1>{settings.brandName}</h1>
-            <span className="device-line">{user.packageName || activePackage?.name} / {displayDeviceName}</span>
+            <div className="device-name-line">
+              <span>Device Name</span>
+              <strong>{displayDeviceName}</strong>
+            </div>
           </div>
           <LiveLogo src={settings.dashboardLogoUrl} fallback={settings.appIconUrl} />
         </header>
@@ -588,6 +641,7 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
             <CalendarClock size={18} />
             <span>Expire</span>
             <strong>{daysLeft(user.expiresAt)}</strong>
+            <small>{user.expiresAt ? `Live: ${subscriptionTime}` : subscriptionTime}</small>
           </div>
           <div className="mini-stat">
             <Radio size={18} />
@@ -595,6 +649,26 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
             <strong className={user.status === "Active" ? "good" : "bad"}>{user.status}</strong>
           </div>
         </div>
+
+        {needsExactDeviceName(displayDeviceName) ? (
+          <motion.form
+            className="device-save-card"
+            onSubmit={saveDeviceName}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div>
+              <span>Exact Device Name</span>
+              <strong>{displayDeviceName}</strong>
+            </div>
+            <input
+              value={exactDeviceName}
+              onChange={(event) => setExactDeviceName(event.target.value)}
+              placeholder="Example: iPhone 15 Pro Max"
+            />
+            <button type="submit">Save</button>
+          </motion.form>
+        ) : null}
 
         <div className="option-list">
           {options.map((option) => {
@@ -657,6 +731,10 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
             <div>
               <span>Expire Date</span>
               <strong>{formatDate(user.expiresAt)}</strong>
+            </div>
+            <div>
+              <span>Live Subscription</span>
+              <strong>{subscriptionTime}</strong>
             </div>
             <div>
               <span>Device Name</span>
@@ -987,7 +1065,8 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
     packageName: "",
     status: "Active",
     expiresAt: "",
-    maxDevices: 1
+    maxDevices: 1,
+    deviceName: ""
   });
 
   useEffect(() => {
@@ -1042,7 +1121,8 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
       packageName: user.packageName,
       status: user.status,
       expiresAt: toDateInput(user.expiresAt),
-      maxDevices: user.maxDevices || 1
+      maxDevices: user.maxDevices || 1,
+      deviceName: user.deviceName || ""
     });
   }
 
@@ -1053,12 +1133,13 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
       packageName: editForm.packageName,
       status: editForm.status,
       expiresAt: asIsoFromInput(editForm.expiresAt),
-      maxDevices: editForm.maxDevices
+      maxDevices: editForm.maxDevices,
+      deviceName: editForm.deviceName
     };
     if (editForm.password) patch.password = editForm.password;
     await updateUser(editingId, patch);
     setEditingId("");
-    setEditForm({ username: "", password: "", packageName: "", status: "Active", expiresAt: "", maxDevices: 1 });
+    setEditForm({ username: "", password: "", packageName: "", status: "Active", expiresAt: "", maxDevices: 1, deviceName: "" });
     setMessage("User updated");
   }
 
@@ -1177,6 +1258,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
                 <th>Package</th>
                 <th>Expire</th>
                 <th>Status</th>
+                <th>Device Name</th>
                 <th>Devices</th>
                 <th>Action</th>
               </tr>
@@ -1190,6 +1272,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
                   <td>
                     <span className={user.status === "Active" ? "good" : "bad"}>{user.status}</span>
                   </td>
+                  <td>{user.deviceName || "Not set"}</td>
                   <td>{user.activeDevices || 0}/{user.maxDevices || 1}</td>
                   <td className="action-row">
                     <button onClick={() => adjustUserDays(user, 1)}>+1</button>
@@ -1234,6 +1317,13 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
             </Field>
             <Field label="Device Limit">
               <input type="number" min="1" value={editForm.maxDevices} onChange={(event) => setEditForm({ ...editForm, maxDevices: event.target.value })} />
+            </Field>
+            <Field label="Device Name">
+              <input
+                value={editForm.deviceName}
+                onChange={(event) => setEditForm({ ...editForm, deviceName: event.target.value })}
+                placeholder="Example: iPhone 15 Pro Max"
+              />
             </Field>
             <Field label="Status">
               <select value={editForm.status} onChange={(event) => setEditForm({ ...editForm, status: event.target.value })}>
@@ -1477,6 +1567,30 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
           }}
         />
       </label>
+      <Field label="Opening Animation Image/Video URL or Data">
+        <input
+          value={form.splashImageUrl || ""}
+          onChange={(event) => setForm({ ...form, splashImageUrl: event.target.value })}
+        />
+      </Field>
+      <label className="upload-line">
+        <Upload size={16} />
+        Upload opening animation media
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (file) setForm({ ...form, splashImageUrl: await fileToDataUrl(file) });
+          }}
+        />
+      </label>
+      <Field label="Opening Animation Text">
+        <input
+          value={form.splashText || ""}
+          onChange={(event) => setForm({ ...form, splashText: event.target.value })}
+        />
+      </Field>
       <Field label="Login Background URL or Data">
         <input
           value={form.loginBackgroundUrl || ""}
