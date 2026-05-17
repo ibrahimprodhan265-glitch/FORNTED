@@ -34,6 +34,8 @@ const initialSettings = {
   brandName: "Hyper Regedit Access",
   appIconUrl: "/icon.png",
   loginBackgroundUrl: "/assets/hyper-logo.jpeg",
+  dashboardLogoUrl: "/icon.png",
+  liveBackgroundUrl: "/assets/hyper-logo.jpeg",
   telegramUrl: "https://t.me/your_support",
   maintenanceEnabled: false,
   maintenanceMessage: "System maintenance is running. Please try again later.",
@@ -104,6 +106,11 @@ function asIsoFromInput(value) {
   return value ? new Date(value).toISOString() : null;
 }
 
+function expiryFromMode(mode, customValue) {
+  if (mode === "custom") return asIsoFromInput(customValue);
+  return new Date(Date.now() + Number(mode || 7) * 86400000).toISOString();
+}
+
 function fileToDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -148,6 +155,23 @@ function AppIcon({ src, size = "lg" }) {
   return (
     <div className={`app-icon app-icon-${size}`}>
       <img src={src || "/icon.png"} alt="" />
+    </div>
+  );
+}
+
+function isVideoAsset(src = "") {
+  return /^data:video\//i.test(src) || /\.(mp4|webm|ogg)(\?|#|$)/i.test(src);
+}
+
+function LiveLogo({ src, fallback = "/icon.png" }) {
+  const source = src || fallback;
+  return (
+    <div className="live-logo">
+      {isVideoAsset(source) ? (
+        <video src={source} autoPlay muted loop playsInline />
+      ) : (
+        <img src={source} alt="" />
+      )}
     </div>
   );
 }
@@ -452,6 +476,7 @@ function LoginScreen({ settings, notice, currentDeviceId, showAdminLink, onLogin
 
 function Dashboard({ settings, packages, options, user, token, setUser, onLogout }) {
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState("success");
   const [busyOption, setBusyOption] = useState("");
   const activePackage = packages.find((item) => item.id === user.packageId);
 
@@ -465,7 +490,11 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
         token
       );
       setUser({ ...user, optionStates: data.optionStates });
+      setMessageKind("success");
+      setMessage(enabled ? "Successfully Activated" : "Successfully Deactivated");
+      window.setTimeout(() => setMessage(""), 1800);
     } catch (error) {
+      setMessageKind("error");
       setMessage(error.message);
     } finally {
       setBusyOption("");
@@ -474,20 +503,25 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
 
   return (
     <section className="phone-wrap dashboard-wrap">
-      <motion.div className="phone-shell dashboard-shell" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <motion.div
+        className="phone-shell dashboard-shell"
+        style={{ "--phone-bg": `url("${settings.liveBackgroundUrl || settings.loginBackgroundUrl || "/assets/hyper-logo.jpeg"}")` }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
         <header className="dash-header">
           <div>
             <p>Hello, {user.username}</p>
             <h1>{settings.brandName}</h1>
           </div>
-          <AppIcon src={settings.appIconUrl} size="sm" />
+          <LiveLogo src={settings.dashboardLogoUrl} fallback={settings.appIconUrl} />
         </header>
 
         <div className="status-grid">
           <div className="mini-stat">
             <Package size={18} />
             <span>Package</span>
-            <strong>{activePackage?.name || user.packageName}</strong>
+            <strong>{user.packageName || activePackage?.name}</strong>
           </div>
           <div className="mini-stat">
             <CalendarClock size={18} />
@@ -527,7 +561,7 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
           })}
         </div>
 
-        {message ? <p className="error-text">{message}</p> : null}
+        {message ? <p className={messageKind === "success" ? "success-text" : "error-text"}>{message}</p> : null}
 
         <div className="glass-card account-card">
           <h2>Account Info</h2>
@@ -545,7 +579,7 @@ function Dashboard({ settings, packages, options, user, token, setUser, onLogout
           </div>
           <div>
             <span>Device</span>
-            <strong>{user.deviceId ? "Locked" : "Pending"}</strong>
+            <strong>{user.activeDevices || 0}/{user.maxDevices || 1}</strong>
           </div>
         </div>
 
@@ -718,84 +752,98 @@ function AdminLogin({ settings, message, onLogin, goApp }) {
   }
 
   return (
-    <section className="admin-login-wrap">
-      <motion.form
-        className="admin-login-card"
-        onSubmit={submit}
-        initial={{ opacity: 0, y: 16, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
+    <section
+      className="coded-login-wrap"
+      style={{ "--login-bg": `url("${settings.loginBackgroundUrl || "/assets/hyper-logo.jpeg"}")` }}
+    >
+      <motion.div
+        className="coded-login-frame admin-coded-frame"
+        initial={{ opacity: 0, scale: 0.985 }}
+        animate={{ opacity: 1, scale: 1 }}
       >
-        <div className="admin-login-brand">
-          <AppIcon src={settings.appIconUrl} size="sm" />
-          <div>
-            <span>Hyper Regedit</span>
-            <strong>Secure Control</strong>
+        <div className="coded-login-hero">
+          <div className="coded-logo-mark">
+            <img src="/assets/hyper-logo.jpeg" alt="" />
           </div>
+          <h1>HYPER <span>REGEDIT</span></h1>
+          <p>ADMIN</p>
         </div>
 
-        <div className="admin-login-title">
-          <div className="admin-login-shield">
+        <form className="coded-login-card admin-coded-card" onSubmit={submit} aria-label="Admin login">
+          <div className="coded-shield">
             <ShieldCheck size={28} />
           </div>
-          <h1>ADMIN PANEL</h1>
-          <p>Login with your administrator password</p>
-        </div>
+          <h2>ADMIN PANEL</h2>
+          <p className="coded-subtitle">Login with your administrator password</p>
 
-        <label className="admin-login-field">
-          <span>ADMIN USERNAME</span>
-          <div className="admin-login-input">
-            <User size={20} />
+          <label className="coded-field">
+            <span>ADMIN USERNAME</span>
+            <div className="coded-input-shell">
+              <User size={22} />
+              <input
+                value={form.username}
+                onChange={(event) => setForm({ ...form, username: event.target.value })}
+                placeholder="Enter admin username"
+                autoComplete="username"
+                aria-label="Admin Username"
+              />
+            </div>
+          </label>
+
+          <label className="coded-field">
+            <span>ADMIN PASSWORD</span>
+            <div className="coded-input-shell">
+              <LockKeyhole size={21} />
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(event) => setForm({ ...form, password: event.target.value })}
+                placeholder="Enter admin password"
+                autoComplete="current-password"
+                aria-label="Admin Password"
+              />
+              <button
+                type="button"
+                className={`coded-eye ${showPassword ? "coded-eye-on" : ""}`}
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={21} /> : <Eye size={21} />}
+              </button>
+            </div>
+          </label>
+
+          <label className="coded-remember">
             <input
-              value={form.username}
-              onChange={(event) => setForm({ ...form, username: event.target.value })}
-              placeholder="Enter admin username"
-              autoComplete="username"
+              type="checkbox"
+              checked={form.remember}
+              onChange={(event) => setForm({ ...form, remember: event.target.checked })}
             />
+            <span className="coded-check" />
+            <span>REMEMBER ADMIN</span>
+          </label>
+
+          <button className={`coded-login-button ${loading ? "coded-login-button-loading" : ""}`} disabled={loading}>
+            <ShieldCheck size={22} />
+            <strong>{loading ? "OPENING" : "LOGIN"}</strong>
+          </button>
+
+          {error ? <p className="coded-login-message">{error}</p> : null}
+
+          <div className="coded-security-row">
+            <span><ShieldCheck size={17} /> ADMIN ACCESS</span>
+            <i />
+            <span><LockKeyhole size={17} /> ENCRYPTED</span>
+            <i />
+            <span><ShieldCheck size={17} /> PROTECTED</span>
           </div>
-        </label>
+        </form>
 
-        <label className="admin-login-field">
-          <span>ADMIN PASSWORD</span>
-          <div className="admin-login-input">
-            <LockKeyhole size={20} />
-            <input
-              type={showPassword ? "text" : "password"}
-              value={form.password}
-              onChange={(event) => setForm({ ...form, password: event.target.value })}
-              placeholder="Enter admin password"
-              autoComplete="current-password"
-            />
-            <button
-              type="button"
-              className={`admin-login-eye ${showPassword ? "admin-login-eye-on" : ""}`}
-              onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
-            >
-              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-        </label>
-
-        <label className="admin-login-remember">
-          <input
-            type="checkbox"
-            checked={form.remember}
-            onChange={(event) => setForm({ ...form, remember: event.target.checked })}
-          />
-          <span />
-          Remember admin
-        </label>
-
-        <button className={`admin-login-button ${loading ? "admin-login-button-loading" : ""}`} disabled={loading}>
-          <ShieldCheck size={18} /> {loading ? "OPENING" : "LOGIN"}
-        </button>
-
-        {error ? <p className="error-text">{error}</p> : null}
-
-        <button type="button" className="admin-login-user-link" onClick={goApp}>
+        <p className="coded-login-footer">(c) 2026 HYPER REGEDIT ACCESS - ADMIN.</p>
+        <button type="button" className="coded-admin-link" onClick={goApp}>
           User App <ChevronRight size={16} />
         </button>
-      </motion.form>
+      </motion.div>
     </section>
   );
 }
@@ -828,14 +876,19 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
   const [form, setForm] = useState({
     username: "",
     password: "",
-    packageId: packages[0]?.id || "",
+    packageName: packages[0]?.name || "Custom Access",
+    expiryMode: "7",
+    customExpiresAt: "",
+    maxDevices: 1,
     status: "Active",
     expiresAt: ""
   });
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (!form.packageId && packages[0]?.id) setForm((current) => ({ ...current, packageId: packages[0].id }));
+    if (form.packageName === "Custom Access" && packages[0]?.name) {
+      setForm((current) => ({ ...current, packageName: packages[0].name }));
+    }
   }, [packages]);
 
   async function createUser(event) {
@@ -846,12 +899,19 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
         "/api/admin/users",
         {
           method: "POST",
-          body: JSON.stringify({ ...form, expiresAt: asIsoFromInput(form.expiresAt) })
+          body: JSON.stringify({
+            username: form.username,
+            password: form.password,
+            packageName: form.packageName,
+            status: form.status,
+            maxDevices: form.maxDevices,
+            expiresAt: expiryFromMode(form.expiryMode, form.customExpiresAt)
+          })
         },
         token
       );
       setUsers([data.user, ...users]);
-      setForm({ ...form, username: "", password: "", expiresAt: "" });
+      setForm({ ...form, username: "", password: "", customExpiresAt: "", maxDevices: 1 });
       setMessage("User created");
       reload();
     } catch (error) {
@@ -885,17 +945,44 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
         <Field label="Password">
           <input value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} required />
         </Field>
-        <Field label="Select Package">
-          <select value={form.packageId} onChange={(event) => setForm({ ...form, packageId: event.target.value })}>
+        <Field label="Package Name">
+          <input
+            list="package-name-options"
+            value={form.packageName}
+            onChange={(event) => setForm({ ...form, packageName: event.target.value })}
+            required
+          />
+          <datalist id="package-name-options">
             {packages.map((pkg) => (
-              <option value={pkg.id} key={pkg.id}>
-                {pkg.name}
-              </option>
+              <option value={pkg.name} key={pkg.id} />
             ))}
+          </datalist>
+        </Field>
+        <Field label="Expiry Duration">
+          <select value={form.expiryMode} onChange={(event) => setForm({ ...form, expiryMode: event.target.value })}>
+            <option value="1">1 Day</option>
+            <option value="7">7 Days</option>
+            <option value="30">30 Days</option>
+            <option value="custom">Custom Date</option>
           </select>
         </Field>
-        <Field label="Expire Date">
-          <input type="datetime-local" value={form.expiresAt} onChange={(event) => setForm({ ...form, expiresAt: event.target.value })} />
+        {form.expiryMode === "custom" ? (
+          <Field label="Custom Expire Date">
+            <input
+              type="datetime-local"
+              value={form.customExpiresAt}
+              onChange={(event) => setForm({ ...form, customExpiresAt: event.target.value })}
+              required
+            />
+          </Field>
+        ) : null}
+        <Field label="Device Limit">
+          <input
+            type="number"
+            min="1"
+            value={form.maxDevices}
+            onChange={(event) => setForm({ ...form, maxDevices: event.target.value })}
+          />
         </Field>
         <Field label="Status">
           <select value={form.status} onChange={(event) => setForm({ ...form, status: event.target.value })}>
@@ -920,7 +1007,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
                 <th>Package</th>
                 <th>Expire</th>
                 <th>Status</th>
-                <th>Device</th>
+                <th>Devices</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -933,7 +1020,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
                   <td>
                     <span className={user.status === "Active" ? "good" : "bad"}>{user.status}</span>
                   </td>
-                  <td>{user.deviceId ? "Locked" : "Open"}</td>
+                  <td>{user.activeDevices || 0}/{user.maxDevices || 1}</td>
                   <td className="action-row">
                     <button onClick={() => updateUser(user.id, { status: user.status === "Active" ? "Suspended" : "Active" })}>
                       <CirclePower size={15} />
@@ -1181,6 +1268,42 @@ function SettingsPanel({ token, settings, setSettings, reload }) {
           onChange={async (event) => {
             const file = event.target.files?.[0];
             if (file) setForm({ ...form, loginBackgroundUrl: await fileToDataUrl(file) });
+          }}
+        />
+      </label>
+      <Field label="Dashboard Live Logo URL or Data">
+        <input
+          value={form.dashboardLogoUrl || ""}
+          onChange={(event) => setForm({ ...form, dashboardLogoUrl: event.target.value })}
+        />
+      </Field>
+      <label className="upload-line">
+        <Upload size={16} />
+        Upload dashboard logo/video
+        <input
+          type="file"
+          accept="image/*,video/*"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (file) setForm({ ...form, dashboardLogoUrl: await fileToDataUrl(file) });
+          }}
+        />
+      </label>
+      <Field label="Dashboard Live Background URL or Data">
+        <input
+          value={form.liveBackgroundUrl || ""}
+          onChange={(event) => setForm({ ...form, liveBackgroundUrl: event.target.value })}
+        />
+      </Field>
+      <label className="upload-line">
+        <Upload size={16} />
+        Upload dashboard background
+        <input
+          type="file"
+          accept="image/*"
+          onChange={async (event) => {
+            const file = event.target.files?.[0];
+            if (file) setForm({ ...form, liveBackgroundUrl: await fileToDataUrl(file) });
           }}
         />
       </label>
