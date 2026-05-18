@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" role="img" aria-label="ACI VIP Server neon background">
+  <defs>
+    <radialGradient id="hot" cx="50%" cy="47%" r="58%">
+      <stop offset="0%" stop-color="#ff4bd5" stop-opacity=".95"/>
+      <stop offset="38%" stop-color="#b3007f" stop-opacity=".42"/>
+      <stop offset="74%" stop-color="#160010" stop-opacity=".9"/>
+      <stop offset="100%" stop-color="#020003"/>
+    </radialGradient>
+    <linearGradient id="chrome" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff5ff"/>
+      <stop offset=".26" stop-color="#ff8fe6"/>
+      <stop offset=".52" stop-color="#c9008e"/>
+      <stop offset=".74" stop-color="#ff52cf"/>
+      <stop offset="1" stop-color="#fff"/>
+    </linearGradient>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="1 0 0 0 1  0 0 .25 0 .02  0 0 1 0 .72  0 0 0 1 0"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="soft" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+  <rect width="1080" height="1080" fill="#030004"/>
+  <circle cx="540" cy="520" r="570" fill="url(#hot)"/>
+  <g opacity=".48" filter="url(#soft)">
+    <circle cx="540" cy="390" r="280" fill="none" stroke="#ff28be" stroke-width="18"/>
+    <path d="M130 770 540 180l410 590-410 210Z" fill="none" stroke="#ff2bc5" stroke-width="13"/>
+    <path d="M210 748 540 270l330 478-330 160Z" fill="none" stroke="#ff94ec" stroke-width="5"/>
+  </g>
+  <g opacity=".74" filter="url(#glow)">
+    <path d="M200 292 383 456" stroke="#ff38cb" stroke-width="22" stroke-linecap="round"/>
+    <path d="M880 292 697 456" stroke="#ff38cb" stroke-width="22" stroke-linecap="round"/>
+    <path d="M150 240 300 380" stroke="#ff7ce4" stroke-width="10" stroke-linecap="round"/>
+    <path d="M930 240 780 380" stroke="#ff7ce4" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g opacity=".62">
+    <path d="M348 420c16-162 110-255 192-255s176 93 192 255c-38-55-94-86-192-86s-154 31-192 86Z" fill="#070007" stroke="#ff49d1" stroke-width="9"/>
+    <path d="M315 610c32-166 120-256 225-256s193 90 225 256c-48-56-120-92-225-92s-177 36-225 92Z" fill="#050005" stroke="#ff30c2" stroke-width="7"/>
+    <rect x="485" y="360" width="110" height="172" rx="30" fill="#050005" stroke="#ff6dde" stroke-width="7"/>
+    <text x="540" y="447" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="34" fill="#fff" filter="url(#glow)">ACI</text>
+    <text x="540" y="482" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="24" fill="#ff8fe6">VIP</text>
+  </g>
+  <g filter="url(#glow)">
+    <text x="540" y="710" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="184" fill="url(#chrome)" stroke="#5e003f" stroke-width="5">ACI</text>
+    <text x="540" y="875" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="172" fill="url(#chrome)" stroke="#5e003f" stroke-width="5">VIP</text>
+    <text x="540" y="975" text-anchor="middle" font-family="Arial Black, Impact, sans-serif" font-size="76" fill="#ffd5f6" stroke="#a00074" stroke-width="3">SERVER</text>
+  </g>
+  <g opacity=".5" filter="url(#glow)">
+    <path d="M110 878h860M190 922h700M292 1015h496" stroke="#ff42ca" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <g opacity=".55">
+    <circle cx="196" cy="258" r="13" fill="#ff9feb"/>
+    <circle cx="884" cy="258" r="13" fill="#ff9feb"/>
+    <circle cx="540" cy="1026" r="10" fill="#ff9feb"/>
+  </g>
+</svg>

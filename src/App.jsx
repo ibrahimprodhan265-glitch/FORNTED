@@ -31,6 +31,7 @@ const ADMIN_TOKEN_KEY = "hyperRegedit.adminToken";
 const DEVICE_ID_KEY = "hyperRegedit.deviceId";
 const SETTINGS_CACHE_KEY = "hyperRegedit.settings";
 const DAY_MS = 86400000;
+const ACI_SPLASH_BG = "/assets/aci-vip-server-bg.svg";
 
 const initialSettings = {
   brandName: "Hyper Regedit Access",
@@ -38,9 +39,9 @@ const initialSettings = {
   webClipLabel: "Hyper Access",
   splashImageUrl: "/icon.png",
   splashText: "Loading Hyper Regedit Access",
-  loginBackgroundUrl: "/assets/hyper-logo.jpeg",
+  loginBackgroundUrl: ACI_SPLASH_BG,
   dashboardLogoUrl: "/icon.png",
-  liveBackgroundUrl: "/assets/hyper-logo.jpeg",
+  liveBackgroundUrl: ACI_SPLASH_BG,
   developerName: "ESE Developer",
   developerBannerUrl: "",
   telegramUrl: "https://t.me/your_support",
@@ -216,6 +217,11 @@ function fileToDataUrl(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+function userBackground(value = "") {
+  const source = String(value || "").trim();
+  return !source || source.includes("/assets/hyper-logo.jpeg") ? ACI_SPLASH_BG : source;
 }
 
 function Field({ label, children }) {
@@ -495,7 +501,10 @@ function UserApp({
 function PreSplash() {
   return (
     <section className="phone-wrap">
-      <div className="phone-shell splash-shell pre-splash-shell">
+      <div
+        className="phone-shell splash-shell pre-splash-shell"
+        style={{ "--phone-bg": `url("${ACI_SPLASH_BG}")`, "--splash-bg": `url("${ACI_SPLASH_BG}")` }}
+      >
         <div className="pre-splash-pulse" />
       </div>
     </section>
@@ -507,6 +516,7 @@ function Splash({ settings }) {
     <section className="phone-wrap">
       <motion.div
         className="phone-shell splash-shell"
+        style={{ "--phone-bg": `url("${ACI_SPLASH_BG}")`, "--splash-bg": `url("${ACI_SPLASH_BG}")` }}
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
       >
@@ -561,7 +571,7 @@ function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, sho
   return (
     <section
       className="coded-login-wrap"
-      style={{ "--login-bg": `url("${settings.loginBackgroundUrl || "/assets/hyper-logo.jpeg"}")` }}
+      style={{ "--login-bg": `url("${userBackground(settings.loginBackgroundUrl)}")` }}
     >
       <motion.div
         className={`coded-login-frame ${loginSuccess ? "coded-login-exit" : ""}`}
@@ -695,7 +705,7 @@ function Dashboard({ settings, packages, options, user, currentDeviceId, token, 
     <section className="phone-wrap dashboard-wrap">
       <motion.div
         className="phone-shell dashboard-shell"
-        style={{ "--phone-bg": `url("${settings.liveBackgroundUrl || settings.loginBackgroundUrl || "/assets/hyper-logo.jpeg"}")` }}
+        style={{ "--phone-bg": `url("${userBackground(settings.liveBackgroundUrl || settings.loginBackgroundUrl)}")` }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
       >
