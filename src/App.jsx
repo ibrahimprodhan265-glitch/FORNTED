@@ -257,6 +257,38 @@ function isVideoAsset(src = "") {
   return /^data:video\//i.test(src) || /\.(mp4|webm|ogg)(\?|#|$)/i.test(src);
 }
 
+function preloadVisualAsset(src = "") {
+  const source = String(src || "").trim();
+  if (!source || typeof document === "undefined") return Promise.resolve();
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = window.setTimeout(finish, 2500);
+
+    if (isVideoAsset(source)) {
+      const video = document.createElement("video");
+      video.muted = true;
+      video.playsInline = true;
+      video.preload = "auto";
+      video.onloadeddata = finish;
+      video.onerror = finish;
+      video.src = source;
+      video.load?.();
+      return;
+    }
+
+    const image = new Image();
+    image.onload = finish;
+    image.onerror = finish;
+    image.src = source;
+  });
+}
+
 function LiveLogo({ src, fallback = "/icon.png" }) {
   const source = src || fallback;
   return (
@@ -284,6 +316,7 @@ export default function App() {
   const [adminToken, setAdminToken] = useState(readToken(ADMIN_TOKEN_KEY));
   const [user, setUser] = useState(null);
   const [booting, setBooting] = useState(true);
+  const [bootVisualReady, setBootVisualReady] = useState(false);
   const [notice, setNotice] = useState("");
 
   const currentDeviceId = useMemo(deviceId, []);
@@ -292,11 +325,14 @@ export default function App() {
   useEffect(() => {
     let alive = true;
     async function boot() {
-      const startedAt = Date.now();
+      let splashStartedAt = Date.now();
+      setBooting(true);
+      setBootVisualReady(false);
       try {
         const bootData = await api("/api/bootstrap");
         if (!alive) return;
         const bootSettings = settingsWithDefaults(bootData.settings);
+        let visualSettings = bootSettings;
         setSettings(bootSettings);
         cacheSettings(bootSettings);
         setPackages(bootData.packages || []);
@@ -307,15 +343,24 @@ export default function App() {
           setUser(data.user);
           setOptions(data.options || []);
           const nextSettings = settingsWithDefaults(data.settings);
+          visualSettings = nextSettings;
           setSettings(nextSettings);
           cacheSettings(nextSettings);
         }
+        await preloadVisualAsset(visualSettings.splashImageUrl || visualSettings.appIconUrl);
+        if (!alive) return;
+        setBootVisualReady(true);
+        splashStartedAt = Date.now();
       } catch (error) {
         setNotice(error.message);
         clearToken(USER_TOKEN_KEY);
         setUserToken("");
+        if (alive) {
+          setBootVisualReady(true);
+          splashStartedAt = Date.now();
+        }
       } finally {
-        const delay = Math.max(900, 1600 - (Date.now() - startedAt));
+        const delay = Math.max(900, 1600 - (Date.now() - splashStartedAt));
         window.setTimeout(() => {
           if (alive) setBooting(false);
         }, delay);
@@ -355,6 +400,7 @@ export default function App() {
       ) : (
         <UserApp
           booting={booting}
+          bootVisualReady={bootVisualReady}
           notice={notice}
           settings={settings}
           setSettings={setSettings}
@@ -377,6 +423,7 @@ export default function App() {
 
 function UserApp({
   booting,
+  bootVisualReady,
   notice,
   settings,
   setSettings,
@@ -392,7 +439,7 @@ function UserApp({
   installedApp,
   goAdmin
 }) {
-  if (booting) return <Splash settings={settings} />;
+  if (booting) return bootVisualReady ? <Splash settings={settings} /> : <PreSplash />;
 
   if (!user) {
     return (
@@ -438,6 +485,16 @@ function UserApp({
         setUser(null);
       }}
     />
+  );
+}
+
+function PreSplash() {
+  return (
+    <section className="phone-wrap">
+      <div className="phone-shell splash-shell pre-splash-shell">
+        <div className="pre-splash-pulse" />
+      </div>
+    </section>
   );
 }
 

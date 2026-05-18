@@ -1508,6 +1508,22 @@ button:disabled {
     padding: 30px;
   }
 
+  .pre-splash-shell {
+    background:
+      radial-gradient(circle at 50% 44%, rgba(124, 60, 255, 0.18), transparent 8rem),
+      linear-gradient(180deg, rgba(7, 2, 20, 0.92), rgba(2, 0, 8, 0.98));
+  }
+
+  .pre-splash-pulse {
+    width: 54px;
+    aspect-ratio: 1;
+    border: 2px solid rgba(180, 108, 255, 0.35);
+    border-top-color: rgba(24, 242, 255, 0.9);
+    border-radius: 999px;
+    box-shadow: 0 0 24px rgba(124, 60, 255, 0.34);
+    animation: spin 0.85s linear infinite;
+  }
+
   .splash-visual {
     width: 126px;
     height: 126px;
@@ -2241,6 +2257,12 @@ button:disabled {
     }
     100% {
       background-position: 180% 0;
+    }
+  }
+
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
   }
 
