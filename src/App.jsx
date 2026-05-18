@@ -569,10 +569,10 @@ function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, sho
         animate={{ opacity: 1, scale: 1 }}
       >
         <div className="coded-login-hero">
-          <div className="coded-logo-mark">
+          <div className="coded-logo-mark aci-logo-mark">
             <img src="/assets/hyper-logo.jpeg" alt="" />
           </div>
-          <h1>HYPER <span>REGEDIT</span></h1>
+          <h1>ANTICHEAT <span>IOS VIP</span></h1>
           <p>ACCESS</p>
         </div>
 
@@ -581,7 +581,7 @@ function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, sho
             <ShieldCheck size={28} />
           </div>
           <h2>WELCOME BACK</h2>
-          <p className="coded-subtitle">Enter your admin generated access key</p>
+          <p className="coded-subtitle">Enter your access key</p>
 
           <label className="coded-field">
             <span>ACCESS KEY</span>
@@ -633,7 +633,9 @@ function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, sho
           </div>
         </form>
 
-        <p className="coded-login-footer">(c) 2026 HYPER REGEDIT ACCESS - ALL RIGHTS RESERVED.</p>
+        <p className="coded-login-footer coded-developer-footer">
+          DEVELOPED BY {settings.developerName || "ESE Developer"}
+        </p>
 
         {showAdminLink ? (
           <button className="coded-admin-link" onClick={goAdmin}>

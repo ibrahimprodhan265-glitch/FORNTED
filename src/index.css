@@ -176,6 +176,41 @@ button:disabled {
     transform: rotate(45deg);
   }
 
+  .aci-logo-mark {
+    width: min(45dvw, 184px);
+    filter:
+      drop-shadow(0 0 18px rgba(255, 255, 255, 0.48))
+      drop-shadow(0 0 34px rgba(180, 108, 255, 0.86))
+      drop-shadow(0 0 58px rgba(24, 242, 255, 0.32));
+    animation: aciLogoGlow 2.4s ease-in-out infinite;
+  }
+
+  .aci-logo-mark::before {
+    content: "ACI";
+    font-size: clamp(58px, 9.8dvh, 92px);
+    letter-spacing: 0.02em;
+    background: linear-gradient(126deg, #ffffff 5%, #d8d3e8 24%, #21182d 50%, #ffffff 67%, #b96cff 88%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-stroke: 1px rgba(255, 255, 255, 0.92);
+    text-shadow:
+      0 0 14px rgba(255, 255, 255, 0.7),
+      0 0 28px rgba(180, 108, 255, 0.95),
+      0 0 62px rgba(124, 60, 255, 0.9),
+      0 0 82px rgba(24, 242, 255, 0.34);
+    transform: skewX(-7deg);
+  }
+
+  .aci-logo-mark::after {
+    right: 8%;
+    top: 47%;
+    box-shadow:
+      16px -15px 0 rgba(180, 108, 255, 0.58),
+      30px 0 0 rgba(105, 45, 230, 0.68),
+      12px 18px 0 rgba(222, 188, 255, 0.44),
+      0 0 28px rgba(180, 108, 255, 1);
+  }
+
   .coded-login-hero h1 {
     margin: -3px 0 0;
     color: #f5f1ff;
@@ -485,6 +520,15 @@ button:disabled {
     font-weight: 800;
     letter-spacing: 0.08em;
     text-shadow: 0 0 16px rgba(124, 60, 255, 0.6);
+  }
+
+  .coded-developer-footer {
+    color: rgba(238, 230, 255, 0.88);
+    font-size: clamp(10px, 1.45dvh, 13px);
+    letter-spacing: 0.12em;
+    text-shadow:
+      0 0 14px rgba(180, 108, 255, 0.72),
+      0 0 28px rgba(24, 242, 255, 0.18);
   }
 
   @media (max-height: 760px) {
@@ -2318,6 +2362,22 @@ button:disabled {
   @keyframes spin {
     to {
       transform: rotate(360deg);
+    }
+  }
+
+  @keyframes aciLogoGlow {
+    0%,
+    100% {
+      filter:
+        drop-shadow(0 0 18px rgba(255, 255, 255, 0.45))
+        drop-shadow(0 0 34px rgba(180, 108, 255, 0.82))
+        drop-shadow(0 0 58px rgba(24, 242, 255, 0.26));
+    }
+    50% {
+      filter:
+        drop-shadow(0 0 24px rgba(255, 255, 255, 0.72))
+        drop-shadow(0 0 48px rgba(180, 108, 255, 1))
+        drop-shadow(0 0 74px rgba(24, 242, 255, 0.38));
     }
   }
 
