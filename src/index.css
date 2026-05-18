@@ -2090,6 +2090,61 @@ button:disabled {
     background: linear-gradient(135deg, rgba(124, 60, 255, 0.22), rgba(24, 242, 255, 0.08));
   }
 
+  .generated-key-preview,
+  .generated-key-list {
+    margin: 12px 0;
+    padding: 12px;
+    border: 1px solid rgba(180, 108, 255, 0.24);
+    border-radius: 14px;
+    background: rgba(8, 4, 22, 0.72);
+  }
+
+  .generated-key-preview span,
+  .generated-key-list h3 {
+    display: block;
+    margin: 0 0 8px;
+    color: rgba(238, 230, 255, 0.66);
+    font-size: 11px;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .generated-key-preview strong {
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+    text-shadow: 0 0 18px rgba(180, 108, 255, 0.4);
+  }
+
+  .generated-key-list {
+    display: grid;
+    gap: 8px;
+  }
+
+  .generated-key-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    min-height: 34px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  .generated-key-row strong {
+    color: #fff;
+    font-size: 12px;
+    overflow-wrap: anywhere;
+  }
+
+  .generated-key-row span {
+    font-size: 11px;
+    font-weight: 900;
+  }
+
   .log-toolbar .danger-action {
     border-color: rgba(255, 85, 119, 0.38);
     color: #ffe6ec;

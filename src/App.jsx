@@ -164,6 +164,10 @@ function liveSubscription(value, now = Date.now()) {
   return `${days}d ${hours}h ${minutes}m ${seconds}s`;
 }
 
+function userAccessActive(user = {}) {
+  return user.status === "Active" && (!user.expiresAt || new Date(user.expiresAt).getTime() > Date.now());
+}
+
 function needsExactDeviceName(value = "") {
   return ["iPhone", "iPad", "Android Device", "Unknown Device"].includes(value);
 }
@@ -370,7 +374,7 @@ export default function App() {
     return () => {
       alive = false;
     };
-  }, [mode, userToken]);
+  }, []);
 
   function goAdmin() {
     window.history.pushState({}, "", "/admin");
@@ -1250,6 +1254,10 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
             required
           />
         </Field>
+        <div className="generated-key-preview">
+          <span>Current Generated Key</span>
+          <strong>{form.password || "Generate or type a custom key"}</strong>
+        </div>
         <Field label="Package Name">
           <input
             list="package-name-options"
@@ -1301,6 +1309,18 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
           <Plus size={17} /> Create Access Key
         </NeonButton>
         {message ? <p className="muted">{message}</p> : null}
+        <div className="generated-key-list">
+          <h3>Generated Keys</h3>
+          {users.slice(0, 8).map((user) => (
+            <div className="generated-key-row" key={user.id}>
+              <strong>{user.accessKey || "Old key hidden"}</strong>
+              <span className={userAccessActive(user) ? "good" : "bad"}>
+                {userAccessActive(user) ? "Active" : "Inactive"}
+              </span>
+            </div>
+          ))}
+          {!users.length ? <p className="muted">No keys created yet.</p> : null}
+        </div>
       </form>
 
       <div className="glass-card data-card">
@@ -1321,6 +1341,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
             <thead>
               <tr>
                 <th>User ID</th>
+                <th>Access Key</th>
                 <th>Package</th>
                 <th>Expire</th>
                 <th>Status</th>
@@ -1333,6 +1354,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
               {users.map((user) => (
                 <tr key={user.id}>
                   <td>{user.id}</td>
+                  <td>{user.accessKey || "Old key hidden"}</td>
                   <td>{user.packageName}</td>
                   <td>{formatDate(user.expiresAt)}</td>
                   <td>
