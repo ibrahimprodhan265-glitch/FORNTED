@@ -29,7 +29,6 @@ const API_BASE = import.meta.env.VITE_API_URL || "";
 const USER_TOKEN_KEY = "hyperRegedit.userToken";
 const ADMIN_TOKEN_KEY = "hyperRegedit.adminToken";
 const DEVICE_ID_KEY = "hyperRegedit.deviceId";
-const DEVICE_NAME_KEY = "hyperRegedit.deviceName";
 const SETTINGS_CACHE_KEY = "hyperRegedit.settings";
 const DAY_MS = 86400000;
 
@@ -90,8 +89,6 @@ function deviceId() {
 }
 
 function deviceName() {
-  const savedName = localStorage.getItem(DEVICE_NAME_KEY);
-  if (savedName) return savedName;
   const ua = navigator.userAgent || "";
   const platform = navigator.userAgentData?.platform || navigator.platform || "";
   if (/iPad/i.test(ua) || (platform === "MacIntel" && navigator.maxTouchPoints > 1)) return "iPad";
@@ -178,6 +175,19 @@ function asIsoFromInput(value) {
 function expiryFromMode(mode, customValue) {
   if (mode === "custom") return asIsoFromInput(customValue);
   return new Date(Date.now() + Number(mode || 7) * DAY_MS).toISOString();
+}
+
+function generateAccessKey(days = 7) {
+  const bytes = new Uint8Array(5);
+  const cryptoApi = globalThis.crypto;
+  if (cryptoApi?.getRandomValues) cryptoApi.getRandomValues(bytes);
+  const randomPart = cryptoApi?.getRandomValues
+    ? Array.from(bytes)
+        .map((byte) => byte.toString(36).padStart(2, "0"))
+        .join("")
+        .toUpperCase()
+    : Math.random().toString(36).slice(2, 12).toUpperCase();
+  return `HYPER-${days}D-${randomPart.slice(0, 10)}`;
 }
 
 function shiftIsoDays(value, delta) {
@@ -305,7 +315,7 @@ export default function App() {
         clearToken(USER_TOKEN_KEY);
         setUserToken("");
       } finally {
-        const delay = Math.max(0, 1300 - (Date.now() - startedAt));
+        const delay = Math.max(900, 1600 - (Date.now() - startedAt));
         window.setTimeout(() => {
           if (alive) setBooting(false);
         }, delay);
@@ -414,7 +424,7 @@ function UserApp({
       packages={packages}
       options={options}
       user={user}
-      currentDeviceName={currentDeviceName}
+      currentDeviceId={currentDeviceId}
       token={userToken}
       setUser={setUser}
       onLogout={async () => {
@@ -445,7 +455,11 @@ function Splash({ settings }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 150, damping: 16 }}
         >
-          <LiveLogo src={settings.splashImageUrl || settings.appIconUrl} fallback={settings.appIconUrl} />
+          <LiveLogo
+            key={settings.splashImageUrl || settings.appIconUrl}
+            src={settings.splashImageUrl || settings.appIconUrl}
+            fallback={settings.appIconUrl}
+          />
         </motion.div>
         <h1>{settings.brandName}</h1>
         <p>{settings.splashText || "Loading Hyper Regedit Access"}</p>
@@ -458,7 +472,7 @@ function Splash({ settings }) {
 }
 
 function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, showAdminLink, onLogin, goAdmin }) {
-  const [form, setForm] = useState({ username: "", password: "", remember: false });
+  const [form, setForm] = useState({ password: "", remember: false });
   const [showPassword, setShowPassword] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
   const [message, setMessage] = useState(notice || "");
@@ -506,33 +520,20 @@ function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, sho
             <ShieldCheck size={28} />
           </div>
           <h2>WELCOME BACK</h2>
-          <p className="coded-subtitle">Login to access your Hyper Regedit account</p>
+          <p className="coded-subtitle">Enter your admin generated access key</p>
 
           <label className="coded-field">
-            <span>EMAIL OR USERNAME</span>
-            <div className="coded-input-shell">
-              <User size={22} />
-              <input
-                value={form.username}
-                onChange={(event) => setForm({ ...form, username: event.target.value })}
-                placeholder="Enter your email or username"
-                autoComplete="username"
-                aria-label="Email or Username"
-              />
-            </div>
-          </label>
-
-          <label className="coded-field">
-            <span>PASSWORD</span>
+            <span>ACCESS KEY</span>
             <div className="coded-input-shell">
               <LockKeyhole size={21} />
               <input
                 value={form.password}
                 onChange={(event) => setForm({ ...form, password: event.target.value })}
-                placeholder="Enter your password"
+                placeholder="Enter your access key"
                 type={showPassword ? "text" : "password"}
                 autoComplete="current-password"
-                aria-label="Password"
+                aria-label="Access key"
+                required
               />
               <button
                 type="button"
@@ -583,7 +584,7 @@ function LoginScreen({ settings, notice, currentDeviceId, currentDeviceName, sho
   );
 }
 
-function Dashboard({ settings, packages, options, user, currentDeviceName, token, setUser, onLogout }) {
+function Dashboard({ settings, packages, options, user, currentDeviceId, token, setUser, onLogout }) {
   const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState("success");
   const [busyOption, setBusyOption] = useState("");
@@ -591,40 +592,13 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
   const [showAccountInfo, setShowAccountInfo] = useState(false);
   const [now, setNow] = useState(Date.now());
   const activePackage = packages.find((item) => item.id === user.packageId);
-  const displayDeviceName = user.deviceName || currentDeviceName || "Unknown Device";
+  const displayDeviceId = currentDeviceId || user.deviceId || "Unknown Device ID";
   const subscriptionTime = liveSubscription(user.expiresAt, now);
-  const [exactDeviceName, setExactDeviceName] = useState(displayDeviceName);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    setExactDeviceName(displayDeviceName);
-  }, [displayDeviceName]);
-
-  async function saveDeviceName(event) {
-    event.preventDefault();
-    const nextName = exactDeviceName.trim();
-    if (!nextName) return;
-    localStorage.setItem(DEVICE_NAME_KEY, nextName);
-    try {
-      const data = await api(
-        "/api/me/device-name",
-        { method: "PATCH", body: JSON.stringify({ deviceName: nextName }) },
-        token
-      );
-      setUser({ ...user, deviceName: data.user?.deviceName || nextName });
-      setMessageKind("success");
-      setMessage("Device name saved");
-    } catch (error) {
-      setUser({ ...user, deviceName: nextName });
-      setMessageKind("error");
-      setMessage(error.message);
-    }
-    window.setTimeout(() => setMessage(""), 1800);
-  }
 
   function selectGameMode(mode) {
     setGameMode(mode);
@@ -664,11 +638,13 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
       >
         <header className="dash-header">
           <div>
-            <p>Hello, {user.username}</p>
+            <p>Access active</p>
             <h1>{settings.brandName}</h1>
             <div className="device-name-line">
-              <span>Device Name</span>
-              <strong>{displayDeviceName}</strong>
+              <span>User ID</span>
+              <strong>{user.id}</strong>
+              <span>Device ID</span>
+              <strong>{displayDeviceId}</strong>
             </div>
           </div>
           <LiveLogo src={settings.dashboardLogoUrl} fallback={settings.appIconUrl} />
@@ -692,26 +668,6 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
             <strong className={user.status === "Active" ? "good" : "bad"}>{user.status}</strong>
           </div>
         </div>
-
-        {needsExactDeviceName(displayDeviceName) ? (
-          <motion.form
-            className="device-save-card"
-            onSubmit={saveDeviceName}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <div>
-              <span>Exact Device Name</span>
-              <strong>{displayDeviceName}</strong>
-            </div>
-            <input
-              value={exactDeviceName}
-              onChange={(event) => setExactDeviceName(event.target.value)}
-              placeholder="Example: iPhone 15 Pro Max"
-            />
-            <button type="submit">Save</button>
-          </motion.form>
-        ) : null}
 
         <div className="option-list">
           {options.map((option) => {
@@ -764,8 +720,8 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
           <motion.div className="glass-card account-card" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
             <h2>Account Info</h2>
             <div>
-              <span>Username</span>
-              <strong>{user.username}</strong>
+              <span>User ID</span>
+              <strong>{user.id}</strong>
             </div>
             <div>
               <span>Package</span>
@@ -780,8 +736,8 @@ function Dashboard({ settings, packages, options, user, currentDeviceName, token
               <strong>{subscriptionTime}</strong>
             </div>
             <div>
-              <span>Device Name</span>
-              <strong>{displayDeviceName}</strong>
+              <span>Device ID</span>
+              <strong>{displayDeviceId}</strong>
             </div>
             <div>
               <span>Device</span>
@@ -1091,27 +1047,24 @@ function AdminDashboard({ summary, logs }) {
 }
 
 function UsersPanel({ token, users, setUsers, packages, reload }) {
-  const [form, setForm] = useState({
-    username: "",
-    password: "",
+  const [form, setForm] = useState(() => ({
+    password: generateAccessKey(7),
     packageName: packages[0]?.name || "Custom Access",
     expiryMode: "7",
     customExpiresAt: "",
     maxDevices: 1,
     status: "Active",
     expiresAt: ""
-  });
+  }));
   const [message, setMessage] = useState("");
   const [bulkDays, setBulkDays] = useState(1);
   const [editingId, setEditingId] = useState("");
   const [editForm, setEditForm] = useState({
-    username: "",
     password: "",
     packageName: "",
     status: "Active",
     expiresAt: "",
-    maxDevices: 1,
-    deviceName: ""
+    maxDevices: 1
   });
 
   useEffect(() => {
@@ -1120,17 +1073,26 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
     }
   }, [packages]);
 
+  function generateKeyFor(days) {
+    setForm((current) => ({
+      ...current,
+      password: generateAccessKey(days),
+      expiryMode: String(days),
+      customExpiresAt: ""
+    }));
+  }
+
   async function createUser(event) {
     event.preventDefault();
     setMessage("");
     try {
+      const accessKey = form.password.trim();
       const data = await api(
         "/api/admin/users",
         {
           method: "POST",
           body: JSON.stringify({
-            username: form.username,
-            password: form.password,
+            password: accessKey,
             packageName: form.packageName,
             status: form.status,
             maxDevices: form.maxDevices,
@@ -1140,8 +1102,8 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
         token
       );
       setUsers([data.user, ...users]);
-      setForm({ ...form, username: "", password: "", customExpiresAt: "", maxDevices: 1 });
-      setMessage("User created");
+      setForm({ ...form, password: generateAccessKey(Number(form.expiryMode) || 7), customExpiresAt: "", maxDevices: 1 });
+      setMessage(`Access key created: ${accessKey}`);
       reload();
     } catch (error) {
       setMessage(error.message);
@@ -1161,30 +1123,26 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
   function startEditUser(user) {
     setEditingId(user.id);
     setEditForm({
-      username: user.username,
       password: "",
       packageName: user.packageName,
       status: user.status,
       expiresAt: toDateInput(user.expiresAt),
-      maxDevices: user.maxDevices || 1,
-      deviceName: user.deviceName || ""
+      maxDevices: user.maxDevices || 1
     });
   }
 
   async function saveEditUser(event) {
     event.preventDefault();
     const patch = {
-      username: editForm.username,
       packageName: editForm.packageName,
       status: editForm.status,
       expiresAt: asIsoFromInput(editForm.expiresAt),
-      maxDevices: editForm.maxDevices,
-      deviceName: editForm.deviceName
+      maxDevices: editForm.maxDevices
     };
-    if (editForm.password) patch.password = editForm.password;
+    if (editForm.password.trim()) patch.password = editForm.password.trim();
     await updateUser(editingId, patch);
     setEditingId("");
-    setEditForm({ username: "", password: "", packageName: "", status: "Active", expiresAt: "", maxDevices: 1, deviceName: "" });
+    setEditForm({ password: "", packageName: "", status: "Active", expiresAt: "", maxDevices: 1 });
     setMessage("User updated");
   }
 
@@ -1218,15 +1176,20 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
   return (
     <div className="panel-grid">
       <form className="glass-card admin-form" onSubmit={createUser}>
-        <h2>Add New User</h2>
-        <Field label="Username">
-          <input value={form.username} onChange={(event) => setForm({ ...form, username: event.target.value })} required />
-        </Field>
-        <Field label="Password">
+        <h2>Access Key Generator</h2>
+        <div className="key-generator-row">
+          {[1, 3, 7, 30].map((days) => (
+            <button type="button" key={days} onClick={() => generateKeyFor(days)}>
+              {days}D Key
+            </button>
+          ))}
+        </div>
+        <Field label="Access Key / Password">
           <input
-            type="password"
+            type="text"
             value={form.password}
             onChange={(event) => setForm({ ...form, password: event.target.value })}
+            placeholder="Custom key or generated key"
             required
           />
         </Field>
@@ -1246,6 +1209,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
         <Field label="Expiry Duration">
           <select value={form.expiryMode} onChange={(event) => setForm({ ...form, expiryMode: event.target.value })}>
             <option value="1">1 Day</option>
+            <option value="3">3 Days</option>
             <option value="7">7 Days</option>
             <option value="30">30 Days</option>
             <option value="custom">Custom Date</option>
@@ -1277,7 +1241,7 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
           </select>
         </Field>
         <NeonButton>
-          <Plus size={17} /> Add User
+          <Plus size={17} /> Create Access Key
         </NeonButton>
         {message ? <p className="muted">{message}</p> : null}
       </form>
@@ -1299,11 +1263,11 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
           <table>
             <thead>
               <tr>
-                <th>Username</th>
+                <th>User ID</th>
                 <th>Package</th>
                 <th>Expire</th>
                 <th>Status</th>
-                <th>Device Name</th>
+                <th>Device ID</th>
                 <th>Devices</th>
                 <th>Action</th>
               </tr>
@@ -1311,13 +1275,13 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id}>
-                  <td>{user.username}</td>
+                  <td>{user.id}</td>
                   <td>{user.packageName}</td>
                   <td>{formatDate(user.expiresAt)}</td>
                   <td>
                     <span className={user.status === "Active" ? "good" : "bad"}>{user.status}</span>
                   </td>
-                  <td>{user.deviceName || "Not set"}</td>
+                  <td>{user.deviceIds?.join(", ") || user.deviceId || "Not locked"}</td>
                   <td>{user.activeDevices || 0}/{user.maxDevices || 1}</td>
                   <td className="action-row">
                     <button onClick={() => adjustUserDays(user, 1)}>+1</button>
@@ -1343,17 +1307,21 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
         {editingId ? (
           <form className="user-edit-panel" onSubmit={saveEditUser}>
             <h3>Edit User</h3>
-            <Field label="Username">
-              <input value={editForm.username} onChange={(event) => setEditForm({ ...editForm, username: event.target.value })} />
-            </Field>
-            <Field label="New Password">
+            <Field label="New Access Key">
               <input
-                type="password"
+                type="text"
                 value={editForm.password}
                 onChange={(event) => setEditForm({ ...editForm, password: event.target.value })}
-                placeholder="Leave blank to keep old password"
+                placeholder="Leave blank to keep old key"
               />
             </Field>
+            <div className="key-generator-row compact">
+              {[1, 3, 7, 30].map((days) => (
+                <button type="button" key={days} onClick={() => setEditForm({ ...editForm, password: generateAccessKey(days) })}>
+                  Generate {days}D
+                </button>
+              ))}
+            </div>
             <Field label="Package Name">
               <input value={editForm.packageName} onChange={(event) => setEditForm({ ...editForm, packageName: event.target.value })} />
             </Field>
@@ -1362,13 +1330,6 @@ function UsersPanel({ token, users, setUsers, packages, reload }) {
             </Field>
             <Field label="Device Limit">
               <input type="number" min="1" value={editForm.maxDevices} onChange={(event) => setEditForm({ ...editForm, maxDevices: event.target.value })} />
-            </Field>
-            <Field label="Device Name">
-              <input
-                value={editForm.deviceName}
-                onChange={(event) => setEditForm({ ...editForm, deviceName: event.target.value })}
-                placeholder="Example: iPhone 15 Pro Max"
-              />
             </Field>
             <Field label="Status">
               <select value={editForm.status} onChange={(event) => setEditForm({ ...editForm, status: event.target.value })}>
@@ -1853,8 +1814,8 @@ function LogTable({ logs, selectedIds = [], onSelect }) {
         <thead>
           <tr>
             {selectable ? <th>Select</th> : null}
-            <th>Device</th>
-            <th>Username</th>
+            <th>User ID</th>
+            <th>Device ID</th>
             <th>Action</th>
             <th>IP Address</th>
             <th>Time</th>
@@ -1870,12 +1831,12 @@ function LogTable({ logs, selectedIds = [], onSelect }) {
                     type="checkbox"
                     checked={selectedIds.includes(log.id)}
                     onChange={() => onSelect(log.id)}
-                    aria-label={`Select ${log.username || "log"}`}
+                    aria-label={`Select ${log.userId || "log"}`}
                   />
                 </td>
               ) : null}
-              <td>{logDeviceLabel(log.userAgent)}</td>
-              <td>{log.username || "-"}</td>
+              <td>{log.userId || "-"}</td>
+              <td>{log.deviceId || "-"}</td>
               <td>{log.action}</td>
               <td>{log.ipAddress || "-"}</td>
               <td>{log.createdAt ? new Date(log.createdAt).toLocaleString() : "-"}</td>

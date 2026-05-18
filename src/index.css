@@ -2008,6 +2008,17 @@ button:disabled {
     margin-top: 12px;
   }
 
+  .key-generator-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 10px 0 12px;
+  }
+
+  .key-generator-row.compact {
+    grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  }
+
   .log-panel-head {
     display: flex;
     align-items: center;
@@ -2039,6 +2050,7 @@ button:disabled {
   }
 
   .bulk-tools button,
+  .key-generator-row button,
   .log-toolbar button,
   .edit-actions > button[type="button"],
   .admin-password-button {
@@ -2054,6 +2066,12 @@ button:disabled {
     background: rgba(124, 60, 255, 0.12);
     font-size: 12px;
     font-weight: 900;
+  }
+
+  .key-generator-row button {
+    padding-inline: 8px;
+    color: #f8efff;
+    background: linear-gradient(135deg, rgba(124, 60, 255, 0.22), rgba(24, 242, 255, 0.08));
   }
 
   .log-toolbar .danger-action {
